@@ -43,13 +43,13 @@ Full oversight of the entire system, managing companies, resolving disputes, and
 
 Every missed delivery window, every wasted trip, every idle driver hour directly cuts into a courier company's razor-thin margins. dispatchCore exists to turn reactive, manual operations into a coordinated, data-driven system — giving small logistics businesses the same operational intelligence that only large enterprises could previously afford.
 
-## Built for Multiple Companies
+<!-- ## Built for Multiple Companies
 
 dispatchCore is a multi-tenant platform. Each delivery company that signs up gets their own isolated workspace. Company A cannot see Company B's warehouses, drivers, orders, or analytics — and vice versa.
 
 However, independent drivers are shared across the entire platform. When any company lists a delivery on the marketplace, freelance drivers from across dispatchCore can see it and bid. Once an independent driver picks up a delivery, only that specific company's dispatchers and the end customer can track them.
 
-A platform-level administrator has full visibility across all companies to manage the system, onboard new businesses, and resolve disputes.
+A platform-level administrator has full visibility across all companies to manage the system, onboard new businesses, and resolve disputes. -->
 
 ## Who Is This For
 
