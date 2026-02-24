@@ -2,7 +2,9 @@
 
 A real-time last-mile logistics control platform that brings order to the chaos of local delivery operations.
 
-![dispatchCore Logo](logo.png)
+<p align="center">
+  <img src="logo.png" alt="dispatchCore Logo" width="200" />
+</p>
 
 ## The Problem
 
