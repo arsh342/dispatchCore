@@ -1,0 +1,42 @@
+{
+  "name": "dispatchcore-backend",
+  "version": "1.0.0",
+  "description": "Backend API for dispatchCore — real-time last-mile logistics control platform",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "lint": "eslint src/ --ext .js",
+    "lint:fix": "eslint src/ --ext .js --fix",
+    "format": "prettier --write \"src/**/*.js\" \"server.js\"",
+    "db:migrate": "npx sequelize-cli db:migrate",
+    "db:migrate:undo": "npx sequelize-cli db:migrate:undo",
+    "db:seed": "npx sequelize-cli db:seed:all",
+    "db:seed:undo": "npx sequelize-cli db:seed:undo:all"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "apollo-server-express": "^3.13.0",
+    "cors": "^2.8.6",
+    "dataloader": "^2.2.3",
+    "dotenv": "^17.3.1",
+    "express": "^4.22.1",
+    "express-rate-limit": "^8.2.1",
+    "express-validator": "^7.3.1",
+    "graphql": "^16.13.0",
+    "helmet": "^8.1.0",
+    "joi": "^18.0.2",
+    "morgan": "^1.10.1",
+    "mysql2": "^3.18.2",
+    "sequelize": "^6.37.7",
+    "socket.io": "^4.8.3",
+    "uuid": "^13.0.0",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.0.2",
+    "nodemon": "^3.1.14",
+    "prettier": "^3.8.1",
+    "sequelize-cli": "^6.6.5"
+  }
+}
