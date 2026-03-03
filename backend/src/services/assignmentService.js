@@ -1,0 +1,220 @@
+/**
+ * Assignment Service
+ *
+ * Handles direct order assignment to employed drivers.
+ * Uses SERIALIZABLE transactions + SELECT FOR UPDATE (pessimistic locking)
+ * to prevent race conditions when two dispatchers assign the same order.
+ *
+ * Flow: Dispatcher assigns → Lock order & driver → Create assignment →
+ *       Log delivery event → Emit WebSocket events
+ */
+
+const { sequelize, Sequelize, Order, Driver, Vehicle, Assignment, DeliveryEvent } = require('../models');
+const { ORDER_STATUS, DRIVER_STATUS, ASSIGNMENT_SOURCE, EVENT_TYPE } = require('../utils/constants');
+const { NotFoundError, ConflictError, LockTimeoutError } = require('../utils/errors');
+const logger = require('../config/logger');
+
+class AssignmentService {
+    constructor(io) {
+        this.io = io; // Socket.io instance (injected)
+    }
+
+    /**
+     * Assign an order directly to an employed driver.
+     * Uses SERIALIZABLE isolation + pessimistic locking to prevent double-assignment.
+     *
+     * @param {number} orderId - Order to assign
+     * @param {number} driverId - Target driver
+     * @param {number|null} vehicleId - Optional vehicle
+     * @param {number} dispatcherId - Who is making the assignment
+     * @returns {Promise<Assignment>} The created assignment
+     */
+    async assignOrder(orderId, driverId, vehicleId, dispatcherId) {
+        const transaction = await sequelize.transaction({
+            isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+        });
+
+        try {
+            // Lock the order row — prevents concurrent assignment
+            const order = await Order.findByPk(orderId, {
+                lock: transaction.LOCK.UPDATE,
+                transaction,
+            });
+
+            if (!order) {
+                throw new NotFoundError('Order');
+            }
+
+            if (order.status !== ORDER_STATUS.UNASSIGNED) {
+                throw new ConflictError(
+                    `Order cannot be assigned — current status is "${order.status}"`,
+                );
+            }
+
+            // Lock the driver row — prevents assigning a busy driver
+            const driver = await Driver.findByPk(driverId, {
+                lock: transaction.LOCK.UPDATE,
+                transaction,
+            });
+
+            if (!driver) {
+                throw new NotFoundError('Driver');
+            }
+
+            if (driver.status !== DRIVER_STATUS.AVAILABLE) {
+                throw new ConflictError(
+                    `Driver is not available — current status is "${driver.status}"`,
+                );
+            }
+
+            // Validate vehicle belongs to the same company (if provided)
+            if (vehicleId) {
+                const vehicle = await Vehicle.findByPk(vehicleId, { transaction });
+                if (!vehicle) {
+                    throw new NotFoundError('Vehicle');
+                }
+                if (vehicle.company_id !== order.company_id) {
+                    throw new ConflictError('Vehicle does not belong to this company');
+                }
+            }
+
+            // Update order status
+            await order.update({ status: ORDER_STATUS.ASSIGNED }, { transaction });
+
+            // Update driver status
+            await driver.update({ status: DRIVER_STATUS.BUSY }, { transaction });
+
+            // Create assignment record
+            const assignment = await Assignment.create(
+                {
+                    order_id: orderId,
+                    driver_id: driverId,
+                    vehicle_id: vehicleId || null,
+                    assigned_by: dispatcherId,
+                    source: ASSIGNMENT_SOURCE.DIRECT,
+                },
+                { transaction },
+            );
+
+            // Log the ASSIGNED delivery event
+            await DeliveryEvent.create(
+                {
+                    assignment_id: assignment.id,
+                    event_type: EVENT_TYPE.ASSIGNED,
+                    timestamp: new Date(),
+                    notes: `Directly assigned by dispatcher #${dispatcherId}`,
+                },
+                { transaction },
+            );
+
+            await transaction.commit();
+
+            logger.info('Order assigned successfully', {
+                orderId,
+                driverId,
+                assignmentId: assignment.id,
+                source: ASSIGNMENT_SOURCE.DIRECT,
+            });
+
+            // Emit real-time events
+            this._emitAssignmentEvents(assignment, order, driver);
+
+            return assignment;
+        } catch (error) {
+            await transaction.rollback();
+
+            // Handle lock timeout specifically
+            if (error.name === 'SequelizeDatabaseError' && error.message.includes('Lock wait timeout')) {
+                throw new LockTimeoutError();
+            }
+
+            throw error;
+        }
+    }
+
+    /**
+     * Cancel an existing assignment.
+     * Reverts order to UNASSIGNED and driver to AVAILABLE.
+     *
+     * @param {number} assignmentId
+     * @returns {Promise<void>}
+     */
+    async cancelAssignment(assignmentId) {
+        const transaction = await sequelize.transaction();
+
+        try {
+            const assignment = await Assignment.findByPk(assignmentId, {
+                include: [
+                    { model: Order, as: 'order' },
+                    { model: Driver, as: 'driver' },
+                ],
+                transaction,
+            });
+
+            if (!assignment) {
+                throw new NotFoundError('Assignment');
+            }
+
+            // Revert statuses
+            await assignment.order.update({ status: ORDER_STATUS.UNASSIGNED }, { transaction });
+            await assignment.driver.update({ status: DRIVER_STATUS.AVAILABLE }, { transaction });
+
+            // Log cancellation event
+            await DeliveryEvent.create(
+                {
+                    assignment_id: assignmentId,
+                    event_type: EVENT_TYPE.FAILED,
+                    timestamp: new Date(),
+                    notes: 'Assignment cancelled',
+                },
+                { transaction },
+            );
+
+            // Remove the assignment record
+            await assignment.destroy({ transaction });
+
+            await transaction.commit();
+
+            logger.info('Assignment cancelled', { assignmentId });
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
+    }
+
+    /**
+     * Emit WebSocket events after a successful assignment.
+     * @private
+     */
+    _emitAssignmentEvents(assignment, order, driver) {
+        if (!this.io) {
+            return;
+        }
+
+        // Notify dispatchers in the company
+        this.io
+            .to(`company:${order.company_id}:dispatchers`)
+            .emit('assignment:created', {
+                assignmentId: assignment.id,
+                orderId: order.id,
+                driverId: driver.id,
+            });
+
+        // Notify the driver directly
+        this.io.to(`driver:${driver.id}`).emit('assignment:new', {
+            assignment: {
+                id: assignment.id,
+                orderId: order.id,
+                source: assignment.source,
+            },
+            order: {
+                id: order.id,
+                pickupAddress: order.pickup_address,
+                deliveryAddress: order.delivery_address,
+                priority: order.priority,
+            },
+        });
+    }
+}
+
+module.exports = AssignmentService;
