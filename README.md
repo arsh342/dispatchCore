@@ -1,11 +1,5 @@
 # dispatchCore
 
-A real-time last-mile logistics control platform that brings order to the chaos of local delivery operations.
-
-<p align="center">
-  <img src="logo.png" alt="dispatchCore Logo" width="200" />
-</p>
-
 ## The Problem
 
 Last-mile delivery — the final leg from a local hub to the customer's door — is the most expensive and disorganized part of any logistics chain. It accounts for over half of total shipping costs, yet most small and mid-sized courier companies still coordinate their entire operation through phone calls, WhatsApp groups, and guesswork.

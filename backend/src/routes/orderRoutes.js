@@ -7,6 +7,7 @@ const {
     unlistOrder,
     assignOrder,
     getOrderBids,
+    updateOrderStatus,
 } = require('../controllers/orderController');
 const { createOrder: createOrderValidator, listOrder: listOrderValidator, assignOrder: assignOrderValidator, getOrder: getOrderValidator } = require('../validators/orderValidator');
 const validate = require('../middlewares/validate');
@@ -35,5 +36,8 @@ router.post('/:id/assign', assignOrderValidator, validate, assignOrder);
 
 // GET    /api/orders/:id/bids       — Get all bids for an order
 router.get('/:id/bids', getOrderValidator, validate, getOrderBids);
+
+// PATCH  /api/orders/:id/status     — Update order status (driver action)
+router.patch('/:id/status', updateOrderStatus);
 
 module.exports = router;

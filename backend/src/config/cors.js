@@ -9,10 +9,10 @@ const cors = require('cors');
 const env = require('./env');
 
 const corsOptions = {
-    origin: env.frontendUrl,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: env.frontendUrl,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-company-id', 'x-user-id', 'x-driver-id'],
 };
 
 module.exports = cors(corsOptions);
