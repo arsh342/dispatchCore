@@ -1,0 +1,235 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@plugin "tailwindcss-animate";
+
+@theme inline {
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --card: #ffffff;
+  --ring: rgba(234, 88, 12, 0.25);
+  --input: #e7e5e4;
+  --muted: #f5f5f4;
+  --accent: rgba(234, 88, 12, 0.08);
+  --border: #e7e5e4;
+  --radius: 0.375rem;
+  --chart-1: #ea580c;
+  --chart-2: #f97316;
+  --chart-3: #fb923c;
+  --chart-4: #fdba74;
+  --chart-5: #fed7aa;
+  --popover: #ffffff;
+  --primary: #ea580c;
+  --sidebar: #fafaf9;
+  --font-mono: "Space Mono", monospace;
+  --font-sans: "Rajdhani", sans-serif;
+  --secondary: #f5f5f4;
+  --background: #f5f5f4;
+  --font-serif: "Rajdhani", sans-serif;
+  --font-display: "Rajdhani", sans-serif;
+  --foreground: #1c1917;
+  --destructive: #ef4444;
+  --sidebar-ring: rgba(234, 88, 12, 0.3);
+  --sidebar-accent: rgba(234, 88, 12, 0.08);
+  --sidebar-border: #e7e5e4;
+  --card-foreground: #1c1917;
+  --sidebar-primary: #ea580c;
+  --muted-foreground: #78716c;
+  --accent-foreground: #ea580c;
+  --popover-foreground: #1c1917;
+  --primary-foreground: #ffffff;
+  --sidebar-foreground: #1c1917;
+  --secondary-foreground: #44403c;
+  --destructive-foreground: #ffffff;
+  --sidebar-accent-foreground: #ea580c;
+  --sidebar-primary-foreground: #ffffff;
+
+  /* Status tokens */
+  --status-transit: #2563eb;
+  --status-transit-bg: #eff6ff;
+  --status-delivered: #16a34a;
+  --status-delivered-bg: #f0fdf4;
+  --status-failed: #dc2626;
+  --status-failed-bg: #fef2f2;
+  --status-pending: #78716c;
+  --status-pending-bg: #f5f5f4;
+
+  /* Map */
+  --map-bg: #ede8e3;
+  --map-grid: rgba(0, 0, 0, 0.05);
+  --map-pin-driver: #fb923c;
+  --map-pin-delivered: #16a34a;
+  --map-pin-failed: #dc2626;
+
+  /* Topbar — always dark in both modes */
+  --topbar-bg: #1c1917;
+  --topbar-border: #292524;
+  --topbar-logo: #fb923c;
+}
+
+.dark {
+  --card: #141210;
+  --ring: rgba(251, 146, 60, 0.2);
+  --input: #1c1917;
+  --muted: #141210;
+  --accent: rgba(251, 146, 60, 0.1);
+  --border: #222018;
+  --radius: 0.375rem;
+  --chart-1: #fb923c;
+  --chart-2: #f97316;
+  --chart-3: #ea580c;
+  --chart-4: #c2410c;
+  --chart-5: #9a3412;
+  --popover: #141210;
+  --primary: #fb923c;
+  --sidebar: #0c0a09;
+  --secondary: #1c1917;
+  --background: #0f0d0c;
+  --foreground: #e7e5e4;
+  --destructive: #ef4444;
+  --sidebar-ring: rgba(251, 146, 60, 0.2);
+  --sidebar-accent: rgba(251, 146, 60, 0.1);
+  --sidebar-border: #1c1917;
+  --card-foreground: #e7e5e4;
+  --sidebar-primary: #fb923c;
+  --muted-foreground: #78716c;
+  --accent-foreground: #fb923c;
+  --popover-foreground: #e7e5e4;
+  --primary-foreground: #0c0a09;
+  --sidebar-foreground: #a8a29e;
+  --secondary-foreground: #a8a29e;
+  --destructive-foreground: #ffffff;
+  --sidebar-accent-foreground: #fb923c;
+  --sidebar-primary-foreground: #0c0a09;
+
+  /* Status tokens — dark mode */
+  --status-transit: #60a5fa;
+  --status-transit-bg: rgba(96, 165, 250, 0.12);
+  --status-delivered: #4ade80;
+  --status-delivered-bg: rgba(74, 222, 128, 0.1);
+  --status-failed: #f87171;
+  --status-failed-bg: rgba(248, 113, 113, 0.1);
+  --status-pending: #78716c;
+  --status-pending-bg: rgba(120, 113, 108, 0.15);
+
+  /* Map */
+  --map-bg: #0d0b0a;
+  --map-grid: rgba(251, 146, 60, 0.04);
+  --map-pin-driver: #fb923c;
+  --map-pin-delivered: #4ade80;
+  --map-pin-failed: #f87171;
+
+  /* Topbar stays dark in both modes */
+  --topbar-bg: #0c0a09;
+  --topbar-border: #1c1917;
+  --topbar-logo: #fb923c;
+}
+
+@theme inline {
+  --color-card: var(--card);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-radius: var(--radius);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-popover: var(--popover);
+  --color-primary: var(--primary);
+  --color-sidebar: var(--sidebar);
+  --color-font-mono: var(--font-mono);
+  --color-font-sans: var(--font-sans);
+  --color-secondary: var(--secondary);
+  --color-background: var(--background);
+  --color-font-serif: var(--font-serif);
+  --color-foreground: var(--foreground);
+  --color-destructive: var(--destructive);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-card-foreground: var(--card-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+@theme inline {
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+  --animate-marquee-logo: marquee-logo var(--duration, 30s) linear infinite;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes marquee-vertical {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes marquee-logo {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

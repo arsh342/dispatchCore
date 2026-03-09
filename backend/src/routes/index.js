@@ -14,6 +14,10 @@ const bidRoutes = require('./bidRoutes');
 const driverRoutes = require('./driverRoutes');
 const locationRoutes = require('./locationRoutes');
 const historyRoutes = require('./historyRoutes');
+const dashboardRoutes = require('./dashboardRoutes');
+const userRoutes = require('./userRoutes');
+const superadminRoutes = require('./superadminRoutes');
+const messageRoutes = require('./messageRoutes');
 
 router.use('/health', healthRoutes);
 router.use('/companies', companyRoutes);
@@ -22,5 +26,9 @@ router.use('/bids', bidRoutes);
 router.use('/drivers', driverRoutes);
 router.use('/location', locationRoutes);
 router.use('/history', historyRoutes);
+router.use('/dashboard', dashboardRoutes);
+router.use('/users', userRoutes);
+router.use('/superadmin', superadminRoutes);
+router.use('/messages', messageRoutes);
 
 module.exports = router;

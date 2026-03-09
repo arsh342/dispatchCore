@@ -98,8 +98,7 @@ Last-mile delivery is the most expensive segment of the logistics chain. Small a
 |---|---|
 | **Must Have** | Multi-tenant isolation, Order CRUD, Direct assignment with locking, Live GPS tracking, WebSocket rooms, Marketplace listing, Bidding, Customer tracking page, Delivery history (role-scoped) |
 | **Should Have** | Route pre-registration, Route matching, GraphQL analytics, Bid counter-offers, Delivery event audit log |
-| **Could Have** | Driver leaderboard, Company-level analytics charts, Dark mode toggle |
-| **Won't Have (CE-01)** | JWT auth, Push notifications, AI route optimization, Email notifications, CI/CD |
+| **Won't Have (CE-01)** | JWT auth, GraphQL, Redux Toolkit, Push notifications, AI route optimization, Email notifications, CI/CD |
 
 ---
 
@@ -123,7 +122,8 @@ graph TB
 
     subgraph Frontend["Frontend (React + Vite)"]
         RC["React Components"]
-        AP["Apollo Client"]
+        RTK["Local State (Zustand/Context)"]
+        AP["React Router DOM"]
         SC["Socket.io Client"]
     end
 
@@ -150,6 +150,8 @@ graph TB
     end
 
     Clients --> CDN --> Frontend
+    RC --> RTK
+    RTK --> RC
     RC --> REST
     AP --> GQL
     SC --> WS
@@ -233,7 +235,6 @@ graph TB
 
     subgraph Communication["Communication Layer"]
         HTTP["HTTP Client (Axios/Fetch)"]
-        GQLC["Apollo Client"]
         WSC["Socket.io Client"]
     end
 
@@ -1001,6 +1002,7 @@ graph LR
 | Component | Technology | Purpose |
 |---|---|---|
 | Frontend | React + Vite | UI layer |
+| State | Redux Toolkit | Global client state (auth, context, active orders) |
 | Styling | CSS Custom Properties | Theme system (light/dark) |
 | Maps | MapLibre GL JS + react-map-gl | WebGL-powered real-time fleet tracking |
 | Tiles | MapTiler (free tier) / OpenFreeMap | Vector tile hosting |
