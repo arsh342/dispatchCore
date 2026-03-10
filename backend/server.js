@@ -1,7 +1,7 @@
 /**
  * Server Entry Point
  *
- * Creates the HTTP server, attaches Socket.io, bootstraps Apollo Server,
+ * Creates the HTTP server, attaches Socket.io, and mounts Express.
  * initializes all services, and wires everything together.
  *
  * Also handles graceful shutdown — closes sockets, drains DB pool,
@@ -10,17 +10,12 @@
 
 const http = require('http');
 const { Server: SocketIO } = require('socket.io');
-const { ApolloServer } = require('apollo-server-express');
+const express = require('express');
 
 const app = require('./src/app');
 const env = require('./src/config/env');
 const logger = require('./src/config/logger');
 const { sequelize } = require('./src/models');
-
-// GraphQL
-const typeDefs = require('./src/graphql/schema');
-const resolvers = require('./src/graphql/resolvers');
-const { createLoaders } = require('./src/graphql/dataLoaders');
 
 // WebSocket
 const { initializeSocket } = require('./src/sockets');
@@ -80,40 +75,10 @@ const startServer = async () => {
     // Expose locationService on io for WebSocket GPS pings
     io.locationService = locationService;
 
-    // 5. Start Apollo Server
-    const apolloServer = new ApolloServer({
-      typeDefs,
-      resolvers,
-      context: () => ({
-        loaders: createLoaders(),
-        services: {
-          assignment: assignmentService,
-          marketplace: marketplaceService,
-          location: locationService,
-          routeMatching: routeMatchingService,
-          history: historyService,
-        },
-      }),
-      introspection: env.nodeEnv === 'development',
-      plugins: [
-        {
-          async serverWillStart() {
-            logger.info('Apollo Server starting');
-          },
-        },
-      ],
-    });
-
-    await apolloServer.start();
-    apolloServer.applyMiddleware({ app, path: '/graphql' });
-    logger.info(`GraphQL ready at /graphql`);
-
-    // 6. Start listening
+    // 5. Start listening (Express / REST / Sockets)
     server.listen(env.port, () => {
       logger.info(`dispatchCore backend running on port ${env.port}`);
       logger.info(`   Environment: ${env.nodeEnv}`);
-      logger.info(`   REST API:    http://localhost:${env.port}/api`);
-      logger.info(`   GraphQL:     http://localhost:${env.port}/graphql`);
       logger.info(`   Health:      http://localhost:${env.port}/api/health`);
     });
 
@@ -130,10 +95,6 @@ const startServer = async () => {
         io.close(() => {
           logger.info('WebSocket connections closed');
         });
-
-        // Stop Apollo
-        await apolloServer.stop();
-        logger.info('Apollo Server stopped');
 
         // Drain database pool
         await sequelize.close();

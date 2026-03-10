@@ -13,8 +13,9 @@ import {
   Users,
   Settings,
   Route,
+  LogOut,
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 interface SidebarProps {
   isDark: boolean;
@@ -37,6 +38,12 @@ const navItems = [
 export function DashboardSidebar({ isDark, setIsDark }: SidebarProps) {
   const [open, setOpen] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/");
+  };
 
   const companyName =
     localStorage.getItem("dc_company_name") || "Global Logistics Co.";
@@ -112,6 +119,19 @@ export function DashboardSidebar({ isDark, setIsDark }: SidebarProps) {
             </div>
           )}
         </Link>
+
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          className={`flex items-center gap-2.5 mb-3 w-full px-1 rounded-full text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 py-1.5 transition-colors ${!open ? "justify-center" : ""}`}
+        >
+          <div className="h-9 w-9 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0">
+            <LogOut className="h-4 w-4" />
+          </div>
+          {open && (
+            <span className="text-sm font-medium">Sign out</span>
+          )}
+        </button>
 
         {/* Dark mode toggle */}
         <div

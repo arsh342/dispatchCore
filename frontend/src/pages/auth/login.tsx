@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAutoTheme } from "@/hooks/useAutoTheme";
 
@@ -260,7 +260,7 @@ export function AuthPage() {
                 Welcome Back
               </h1>
               <p className="text-muted-foreground text-sm">
-                Log in to your dashboard
+                Sign in to your dashboard
               </p>
             </div>
 
@@ -344,32 +344,15 @@ export function AuthPage() {
               >
                 {loading ? (
                   <>
-                    <Loader2Icon className="size-4 animate-spin" /> Logging
+                    <Loader2Icon className="size-4 animate-spin" /> Signing
                     in...
                   </>
                 ) : (
-                  "Log In"
+                  "Sign In"
                 )}
               </button>
             </form>
 
-            {/* Separator */}
-            <div className="flex w-full items-center justify-center py-1">
-              <div className="bg-border h-px w-full" />
-              <span className="text-muted-foreground px-3 text-xs whitespace-nowrap">
-                or continue with
-              </span>
-              <div className="bg-border h-px w-full" />
-            </div>
-
-            {/* Google SSO */}
-            <button
-              type="button"
-              className="w-full flex items-center justify-center gap-2 rounded-full border border-input bg-card px-4 py-[10px] text-sm font-medium text-foreground hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring relative"
-            >
-              <GoogleIcon className="size-4 absolute left-5" />
-              Sign in with Google
-            </button>
 
             {/* Sign up link */}
             <p className="text-center text-sm text-muted-foreground">
@@ -385,7 +368,7 @@ export function AuthPage() {
             {/* Role selector chips */}
             <div className="pt-3 border-t border-border">
               <p className="text-xs text-muted-foreground mb-2.5 text-center">
-                Logging in as:
+                Signing in as:
               </p>
               <div className="flex gap-2 justify-center">
                 {(["dispatcher", "driver", "superadmin"] as const).map(
@@ -418,15 +401,3 @@ export function AuthPage() {
   );
 }
 
-const GoogleIcon = (props: React.ComponentProps<"svg">) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    {...props}
-  >
-    <g>
-      <path d="M12.479,14.265v-3.279h11.049c0.108,0.571,0.164,1.247,0.164,1.979c0,2.46-0.672,5.502-2.84,7.669   C18.744,22.829,16.051,24,12.483,24C5.869,24,0.308,18.613,0.308,12S5.869,0,12.483,0c3.659,0,6.265,1.436,8.223,3.307L18.392,5.62   c-1.404-1.317-3.307-2.341-5.913-2.341C7.65,3.279,3.873,7.171,3.873,12s3.777,8.721,8.606,8.721c3.132,0,4.916-1.258,6.059-2.401   c0.927-0.927,1.537-2.251,1.777-4.059L12.479,14.265z" />
-    </g>
-  </svg>
-);
