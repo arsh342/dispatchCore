@@ -30,9 +30,8 @@ import {
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
 const planColors: Record<string, string> = {
-  FREE: "text-gray-500 bg-secondary",
-  BASIC: "text-blue-500 bg-blue-50 dark:bg-blue-900/20",
-  PREMIUM: "text-purple-500 bg-purple-50 dark:bg-purple-900/20",
+  STARTER: "text-gray-500 bg-secondary",
+  GROWTH: "text-blue-500 bg-blue-50 dark:bg-blue-900/20",
   ENTERPRISE: "text-amber-500 bg-amber-50 dark:bg-amber-900/20",
 };
 
@@ -49,7 +48,7 @@ export default function SuperAdminCompaniesPage() {
   const [createForm, setCreateForm] = useState({
     name: "",
     address: "",
-    plan_type: "FREE",
+    plan_type: "STARTER",
   });
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
@@ -204,7 +203,7 @@ export default function SuperAdminCompaniesPage() {
               />
             </div>
             <div className="flex gap-1.5">
-              {["ALL", "FREE", "BASIC", "PREMIUM", "ENTERPRISE"].map((p) => (
+              {["ALL", "STARTER", "GROWTH", "ENTERPRISE"].map((p) => (
                 <button
                   key={p}
                   onClick={() => setPlanFilter(p)}
@@ -377,9 +376,8 @@ export default function SuperAdminCompaniesPage() {
                   }
                   className="w-full px-4 py-2.5 rounded-full border border-border bg-card text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
                 >
-                  <option value="FREE">Free</option>
-                  <option value="BASIC">Basic</option>
-                  <option value="PREMIUM">Premium</option>
+                  <option value="STARTER">Starter</option>
+                  <option value="GROWTH">Growth</option>
                   <option value="ENTERPRISE">Enterprise</option>
                 </select>
               </div>

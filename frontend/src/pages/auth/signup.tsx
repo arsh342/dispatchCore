@@ -109,8 +109,8 @@ export function SignupPage() {
               companySize === "large"
                 ? "ENTERPRISE"
                 : companySize === "medium"
-                  ? "PREMIUM"
-                  : "FREE",
+                  ? "GROWTH"
+                  : "STARTER",
           }),
         });
 

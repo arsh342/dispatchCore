@@ -33,9 +33,8 @@ import {
 } from "@/services/superadmin/dashboard";
 
 const planColors: Record<string, string> = {
-  FREE: "text-gray-500 bg-secondary",
-  BASIC: "text-blue-500 bg-blue-50 dark:bg-blue-900/20",
-  PREMIUM: "text-purple-500 bg-purple-50 dark:bg-purple-900/20",
+  STARTER: "text-gray-500 bg-secondary",
+  GROWTH: "text-blue-500 bg-blue-50 dark:bg-blue-900/20",
   ENTERPRISE: "text-amber-500 bg-amber-50 dark:bg-amber-900/20",
 };
 
@@ -254,7 +253,7 @@ export default function SuperAdminDashboardPage() {
                         <div className="col-span-2">
                           <span
                             className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                              planColors[company.planType] ?? planColors.FREE
+                              planColors[company.planType] ?? planColors.STARTER
                             }`}
                           >
                             {company.planType}
