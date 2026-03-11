@@ -86,9 +86,8 @@ const ROUTE_STOP_STATUS = Object.freeze({
 });
 
 const PLAN_TYPE = Object.freeze({
-  FREE: 'FREE',
-  BASIC: 'BASIC',
-  PREMIUM: 'PREMIUM',
+  STARTER: 'STARTER',
+  GROWTH: 'GROWTH',
   ENTERPRISE: 'ENTERPRISE',
 });
 

@@ -28,8 +28,8 @@ module.exports = (sequelize) => {
                 allowNull: true,
             },
             plan_type: {
-                type: DataTypes.ENUM('FREE', 'BASIC', 'PREMIUM', 'ENTERPRISE'),
-                defaultValue: 'FREE',
+                type: DataTypes.ENUM('STARTER', 'GROWTH', 'ENTERPRISE'),
+                defaultValue: 'STARTER',
                 allowNull: false,
             },
         },

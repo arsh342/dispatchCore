@@ -19,8 +19,8 @@ module.exports = {
                 allowNull: true,
             },
             plan_type: {
-                type: Sequelize.ENUM('FREE', 'BASIC', 'PREMIUM', 'ENTERPRISE'),
-                defaultValue: 'FREE',
+                type: Sequelize.ENUM('STARTER', 'GROWTH', 'ENTERPRISE'),
+                defaultValue: 'STARTER',
                 allowNull: false,
             },
             created_at: {
