@@ -102,7 +102,7 @@ Last-mile delivery is the most expensive segment of the logistics chain. Small a
 |---|---|
 | **Must Have** | Multi-tenant isolation, Order CRUD, Direct assignment with locking, Live GPS tracking, WebSocket rooms, Marketplace listing, Bidding, Customer tracking page, Delivery history (role-scoped), In-app messaging |
 | **Should Have** | Route pre-registration, Route matching, Delivery event audit log, Earnings computation, Auto-refresh dashboards, Server-side status transition enforcement |
-| **Won't Have (CE-01)** | JWT auth, GraphQL analytics, Push notifications, AI route optimization, Email notifications, CI/CD, WebSocket auth handshakes, Hub management UI, RouteStop multi-delivery batching, Per-user rate limiting |
+| **Won't Have (CE-01)** | JWT auth, Push notifications, AI route optimization, Email notifications, CI/CD, WebSocket auth handshakes, Hub management UI, RouteStop multi-delivery batching, Per-user rate limiting |
 
 ---
 

@@ -75,7 +75,7 @@ cd backend
 cp .env.example .env
 npm install
 npm run db:migrate
-npm run dev        # → http://localhost:5000
+npm run dev        # → http://localhost:8000
 
 # Frontend
 cd frontend
