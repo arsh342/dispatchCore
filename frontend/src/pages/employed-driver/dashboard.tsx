@@ -4,7 +4,6 @@ import { EmployedDriverSidebar } from "@/components/dashboard/employed-driver-si
 import { useGeolocationPing } from "@/hooks/useGeolocationPing";
 import { useTheme } from "@/hooks/useTheme";
 import {
-  Bell,
   CheckCircle2,
   Star,
   Timer,
@@ -110,6 +109,17 @@ export default function EmployedDriverDashboard() {
       setLoading(false);
     }
     load();
+
+    // Auto-refresh every 30s to stay in sync with dispatcher status changes
+    const interval = setInterval(async () => {
+      const [s, o] = await Promise.all([
+        fetchEmployedDashboardStats(),
+        fetchAssignedOrders(),
+      ]);
+      setStats(s);
+      setOrders(o);
+    }, 30_000);
+    return () => clearInterval(interval);
   }, []);
 
   const activeOrders = orders.filter(
@@ -195,10 +205,6 @@ export default function EmployedDriverDashboard() {
                   {user?.status === "AVAILABLE" ? "On Shift" : "Off Shift"}
                 </span>
               </div>
-              <button className="relative p-2.5 rounded-full hover:bg-secondary transition-colors">
-                <Bell className="h-5 w-5 text-gray-500" />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500" />
-              </button>
             </div>
           </div>
         </header>
@@ -281,24 +287,18 @@ export default function EmployedDriverDashboard() {
                 </div>
               )}
 
-              {activeOrders.map((order, i) => (
+              {activeOrders.map((order) => (
                 <div
                   key={order.id}
-                  className={`p-5 rounded-3xl bg-card border-1 shadow-sm ${
-                    ["PICKED_UP", "EN_ROUTE"].includes(order.status)
-                      ? "border-blue-400 dark:border-blue-500"
-                      : order.status === "ASSIGNED"
-                        ? "border-amber-200 dark:border-amber-800"
-                        : "border-border"
-                  }`}
+                  className="p-5 rounded-3xl bg-card border border-border shadow-sm hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-gray-400 bg-secondary px-2 py-0.5 rounded">
-                        #{i + 1}
-                      </span>
                       <span className="text-sm font-bold text-foreground">
                         {order.id}
+                      </span>
+                      <span className="text-[10px] font-mono text-gray-400">
+                        {order.trackingCode}
                       </span>
                       {(order.priority === "URGENT" ||
                         order.priority === "HIGH") && (
@@ -311,24 +311,31 @@ export default function EmployedDriverDashboard() {
                       <span
                         className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusColor[order.status] ?? "text-gray-500 bg-gray-100"}`}
                       >
-                        {statusLabel(order.status)}
+                        • {statusLabel(order.status)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
-                    <MapPin className="h-3 w-3 text-primary shrink-0" />
-                    <span className="truncate">
-                      {order.pickupAddress.split(",")[0]}
-                    </span>
-                    <ArrowRight className="h-2.5 w-2.5 shrink-0" />
-                    <MapPin className="h-3 w-3 text-green-500 shrink-0" />
-                    <span className="truncate">
-                      {order.deliveryAddress.split(",")[0]}
-                    </span>
+                  {/* Route */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span className="text-sm text-secondary-foreground truncate">
+                          {order.pickupAddress}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                        <span className="text-sm text-secondary-foreground truncate">
+                          {order.deliveryAddress}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-gray-400">
+                  {/* Meta row */}
+                  <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
                     <div className="flex items-center gap-3">
                       <span>{order.customerName}</span>
                       <span>{order.weight}</span>
@@ -342,54 +349,63 @@ export default function EmployedDriverDashboard() {
                     </span>
                   </div>
 
-                  {["PICKED_UP", "EN_ROUTE"].includes(order.status) && (
-                    <div className="flex gap-2 mt-3">
+                  {/* Action buttons */}
+                  <div className="flex gap-2 mt-3">
+                    {["PICKED_UP", "EN_ROUTE"].includes(order.status) && (
                       <button
                         onClick={() => openNavigation(order.deliveryAddress)}
-                        className="flex-1 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                        className="flex-1 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5"
                       >
+                        <ArrowRight className="h-3.5 w-3.5" />
                         Navigate
                       </button>
-                      {order.status === "PICKED_UP" ? (
-                        <button
-                          disabled={
-                            actionLoading === `${order._backendId}-EN_ROUTE`
-                          }
-                          onClick={() => updateOrderStatus(order, "EN_ROUTE")}
-                          className="flex-1 py-2 rounded-full bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-                        >
-                          {actionLoading === `${order._backendId}-EN_ROUTE`
-                            ? "Updating..."
-                            : "Start Route"}
-                        </button>
-                      ) : (
-                        <button
-                          disabled={
-                            actionLoading === `${order._backendId}-DELIVERED`
-                          }
-                          onClick={() => updateOrderStatus(order, "DELIVERED")}
-                          className="flex-1 py-2 rounded-full bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
-                        >
-                          {actionLoading === `${order._backendId}-DELIVERED`
-                            ? "Updating..."
-                            : "Mark Delivered"}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  {order.status === "ASSIGNED" && (
+                    )}
                     <button
                       disabled={
-                        actionLoading === `${order._backendId}-PICKED_UP`
+                        actionLoading ===
+                        `${order._backendId}-${
+                          order.status === "ASSIGNED"
+                            ? "PICKED_UP"
+                            : order.status === "PICKED_UP"
+                              ? "EN_ROUTE"
+                              : "DELIVERED"
+                        }`
                       }
-                      onClick={() => updateOrderStatus(order, "PICKED_UP")}
-                      className="w-full mt-3 py-2 rounded-full border-2 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors disabled:opacity-50"
+                      onClick={() =>
+                        updateOrderStatus(
+                          order,
+                          order.status === "ASSIGNED"
+                            ? "PICKED_UP"
+                            : order.status === "PICKED_UP"
+                              ? "EN_ROUTE"
+                              : "DELIVERED",
+                        )
+                      }
+                      className={`flex-1 py-2 rounded-full text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 ${
+                        order.status === "ASSIGNED"
+                          ? "bg-blue-600 text-white hover:bg-blue-700"
+                          : order.status === "EN_ROUTE"
+                            ? "bg-green-600 text-white hover:bg-green-700"
+                            : "bg-blue-600 text-white hover:bg-blue-700"
+                      }`}
                     >
-                      {actionLoading === `${order._backendId}-PICKED_UP`
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      {actionLoading ===
+                      `${order._backendId}-${
+                        order.status === "ASSIGNED"
+                          ? "PICKED_UP"
+                          : order.status === "PICKED_UP"
+                            ? "EN_ROUTE"
+                            : "DELIVERED"
+                      }`
                         ? "Updating..."
-                        : "Start Pickup"}
+                        : order.status === "ASSIGNED"
+                          ? "Start Pickup"
+                          : order.status === "PICKED_UP"
+                            ? "Start Route"
+                            : "Mark Delivered"}
                     </button>
-                  )}
+                  </div>
 
                   {/* Chat buttons */}
                   <div className="flex gap-2 mt-2">

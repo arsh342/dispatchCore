@@ -1,295 +1,616 @@
-/**
- * SuperAdmin — Settings Page
- *
- * Platform configuration: general settings, API status,
- * environment info, and superadmin account details.
- */
-
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { SuperAdminSidebar } from "@/components/dashboard/superadmin-sidebar";
+import {
+  SettingsCard,
+  SettingsNotice,
+  SettingsWorkspace,
+  ToggleRow,
+  type SettingsTabItem,
+} from "@/components/settings/workspace";
 import { useTheme } from "@/hooks/useTheme";
 import {
-  Settings,
   Bell,
-  Globe,
   Database,
-  Shield,
-  Server,
-  Zap,
-  CheckCircle2,
-  Copy,
+  Globe,
+  Loader2,
   LogOut,
+  Mail,
+  Palette,
+  Save,
+  Server,
+  Settings,
+  Shield,
+  User,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import {
+  fetchSuperadminSettings,
+  saveSuperadminSettings,
+} from "@/services/settings";
+import type { SuperadminSettings } from "@/types/settings";
+
+const tabs: SettingsTabItem[] = [
+  { id: "profile", label: "Profile", icon: User, description: "Platform identity" },
+  { id: "notifications", label: "Notifications", icon: Bell, description: "Platform alerts" },
+  { id: "appearance", label: "Appearance", icon: Palette, description: "Theme preference" },
+  { id: "system", label: "System", icon: Settings, description: "Read-only environment" },
+];
+
+const accentClass =
+  "bg-red-600 text-white shadow-[0_24px_60px_-32px_rgba(220,38,38,0.95)]";
 
 export default function SuperAdminSettingsPage() {
   const { isDark, setIsDark } = useTheme();
   const navigate = useNavigate();
-  const [copied, setCopied] = useState<string | null>(null);
-
-  // Health check
+  const [activeTab, setActiveTab] = useState("profile");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [settings, setSettings] = useState<SuperadminSettings | null>(null);
   const [apiHealth, setApiHealth] = useState<{
     status: string;
     uptime?: number;
   } | null>(null);
 
   useEffect(() => {
-    const API_BASE =
-      import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+    async function load() {
+      try {
+        const data = await fetchSuperadminSettings();
+        setSettings(data);
+        setIsDark(data.appearancePreferences.theme === "dark");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load settings.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, [setIsDark]);
+
+  useEffect(() => {
+    const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
     fetch(`${API_BASE}/health`)
-      .then((r) => r.json())
-      .then((d) => setApiHealth(d.data ?? d))
+      .then((response) => response.json())
+      .then((body) => setApiHealth(body.data ?? body))
       .catch(() => setApiHealth({ status: "error" }));
   }, []);
 
-  const handleCopy = (value: string, key: string) => {
-    navigator.clipboard.writeText(value);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 2000);
-  };
+  async function handleSave() {
+    if (!settings) return;
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      const updated = await saveSuperadminSettings(settings);
+      setSettings(updated);
+      setIsDark(updated.appearancePreferences.theme === "dark");
+      setSuccess("Superadmin settings saved.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save settings.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function submitSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void handleSave();
+  }
 
   const handleLogout = () => {
     localStorage.clear();
     navigate("/login");
   };
 
-  const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+  if (loading || !settings) {
+    return (
+      <div className="flex min-h-screen w-full">
+        <SuperAdminSidebar isDark={isDark} setIsDark={setIsDark} />
+        <div className="flex flex-1 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-h-screen w-full">
-      <SuperAdminSidebar isDark={isDark} setIsDark={setIsDark} />
+    <SettingsWorkspace
+      title="Platform Settings"
+      description="Persistent profile and preference controls for the dispatchCore superadmin workspace."
+      tabs={tabs}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      accentClass={accentClass}
+      sidebar={<SuperAdminSidebar isDark={isDark} setIsDark={setIsDark} />}
+    >
+      {error && <SettingsNotice tone="error">{error}</SettingsNotice>}
+      {success && <SettingsNotice tone="success">{success}</SettingsNotice>}
 
-      <div className="flex-1 bg-background overflow-auto">
-        {/* Top Bar */}
-        <header className="sticky top-0 z-10 bg-card backdrop-blur-xl border-b border-border px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-                <Settings className="h-5 w-5 text-gray-500" />
-                Platform Settings
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Configuration, environment info, and account management.
-              </p>
+      {activeTab === "profile" && (
+        <form className="space-y-6" onSubmit={submitSave}>
+          <SettingsCard
+            title="Superadmin Profile"
+            description="Persistent profile values are stored separately from environment-based login credentials."
+            actions={
+              <span className="rounded-full bg-red-500/10 px-3 py-1 text-xs font-medium text-red-400">
+                SUPERADMIN
+              </span>
+            }
+          >
+            <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+              <div className="rounded-3xl border border-border bg-muted/40 p-6">
+                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-red-400 text-3xl font-bold text-white">
+                  {settings.name
+                    .split(" ")
+                    .map((part) => part[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </div>
+                <p className="mt-4 text-lg font-semibold text-foreground">
+                  {settings.name}
+                </p>
+                <p className="text-sm text-muted-foreground">{settings.email}</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                  Platform control plane
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field
+                  label="Display name"
+                  icon={User}
+                  value={settings.name}
+                  onChange={(value) =>
+                    setSettings((prev) => (prev ? { ...prev, name: value } : prev))
+                  }
+                />
+                <Field
+                  label="Profile email"
+                  icon={Mail}
+                  type="email"
+                  value={settings.email}
+                  onChange={(value) =>
+                    setSettings((prev) => (prev ? { ...prev, email: value } : prev))
+                  }
+                />
+                <ReadOnly label="Login email" value={settings.loginEmail} />
+                <ReadOnly label="Role" value="superadmin" />
+              </div>
             </div>
-            <button className="relative p-2.5 rounded-full hover:bg-secondary transition-colors">
-              <Bell className="h-5 w-5 text-gray-500" />
+          </SettingsCard>
+
+          <div className="sticky bottom-4 z-[1] flex justify-end">
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-3 text-sm font-medium text-white shadow-[0_24px_60px_-32px_rgba(220,38,38,0.95)] transition-colors hover:bg-red-700 disabled:opacity-60"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Save changes
             </button>
           </div>
-        </header>
+        </form>
+      )}
 
-        <div className="p-6 space-y-6 max-w-4xl">
-          {/* Platform Info */}
-          <Section title="Platform Information" icon={Globe}>
-            <InfoRow label="Platform Name" value="dispatchCore" />
-            <InfoRow label="Version" value="1.0.0 (CE-01)" />
-            <InfoRow
-              label="Environment"
-              value={import.meta.env.MODE ?? "development"}
-            />
-            <InfoRow
-              label="Frontend URL"
-              value={window.location.origin}
-              onCopy={(v) => handleCopy(v, "frontend")}
-              copied={copied === "frontend"}
-            />
-            <InfoRow
-              label="API Base URL"
-              value={API_BASE}
-              onCopy={(v) => handleCopy(v, "api")}
-              copied={copied === "api"}
-            />
-          </Section>
+      {activeTab === "notifications" && (
+        <>
+          <SettingsCard
+            title="Platform Alerts"
+            description="Persisted alert preferences for the superadmin surface."
+          >
+            <div className="space-y-3">
+              <ToggleRow
+                label="Platform alerts"
+                description="Critical platform health and incident updates."
+                checked={settings.notificationPreferences.platform_alerts}
+                onChange={(value) =>
+                  setSettings((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          notificationPreferences: {
+                            ...prev.notificationPreferences,
+                            platform_alerts: value,
+                          },
+                        }
+                      : prev,
+                  )
+                }
+                activeClass="bg-red-600"
+              />
+              <ToggleRow
+                label="Company registrations"
+                description="Notify when new companies are created on the platform."
+                checked={settings.notificationPreferences.company_registrations}
+                onChange={(value) =>
+                  setSettings((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          notificationPreferences: {
+                            ...prev.notificationPreferences,
+                            company_registrations: value,
+                          },
+                        }
+                      : prev,
+                  )
+                }
+                activeClass="bg-red-600"
+              />
+              <ToggleRow
+                label="Driver verifications"
+                description="Signal verification pipeline changes for independent drivers."
+                checked={settings.notificationPreferences.driver_verifications}
+                onChange={(value) =>
+                  setSettings((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          notificationPreferences: {
+                            ...prev.notificationPreferences,
+                            driver_verifications: value,
+                          },
+                        }
+                      : prev,
+                  )
+                }
+                activeClass="bg-red-600"
+              />
+              <ToggleRow
+                label="Daily summary"
+                description="Send a platform summary snapshot once per day."
+                checked={settings.notificationPreferences.daily_summary}
+                onChange={(value) =>
+                  setSettings((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          notificationPreferences: {
+                            ...prev.notificationPreferences,
+                            daily_summary: value,
+                          },
+                        }
+                      : prev,
+                  )
+                }
+                activeClass="bg-red-600"
+              />
+            </div>
+          </SettingsCard>
+          <div className="sticky bottom-4 z-[1] flex justify-end">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-3 text-sm font-medium text-white shadow-[0_24px_60px_-32px_rgba(220,38,38,0.95)] transition-colors hover:bg-red-700 disabled:opacity-60"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Save changes
+            </button>
+          </div>
+        </>
+      )}
 
-          {/* API Health */}
-          <Section title="System Health" icon={Server}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <HealthCard
+      {activeTab === "appearance" && (
+        <>
+          <SettingsCard
+            title="Theme Preference"
+            description="Stored in persistent superadmin settings and applied immediately."
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              {[
+                { label: "Dark", value: "dark" as const },
+                { label: "Light", value: "light" as const },
+              ].map((option) => {
+                const active = settings.appearancePreferences.theme === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setSettings((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              appearancePreferences: { theme: option.value },
+                            }
+                          : prev,
+                      );
+                      setIsDark(option.value === "dark");
+                    }}
+                    className={`rounded-3xl border p-6 text-left transition-all ${
+                      active
+                        ? "border-red-600 bg-red-600/10"
+                        : "border-border bg-muted/30 hover:border-red-500/40"
+                    }`}
+                  >
+                    <p className="text-lg font-semibold text-foreground">
+                      {option.label}
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {option.value === "dark"
+                        ? "Best fit for dense platform monitoring and admin review."
+                        : "Brighter surface for audits, listings, and operations checks."}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </SettingsCard>
+          <div className="sticky bottom-4 z-[1] flex justify-end">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-3 text-sm font-medium text-white shadow-[0_24px_60px_-32px_rgba(220,38,38,0.95)] transition-colors hover:bg-red-700 disabled:opacity-60"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Save changes
+            </button>
+          </div>
+        </>
+      )}
+
+      {activeTab === "system" && (
+        <>
+          <SettingsCard
+            title="Platform Information"
+            description="Read-only platform identity and environment context for the current control plane."
+          >
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <MetricCard
+                icon={Shield}
+                label="Platform"
+                value="dispatchCore"
+              />
+              <MetricCard
+                icon={Settings}
+                label="Environment"
+                value={import.meta.env.MODE ?? "development"}
+              />
+              <MetricCard
+                icon={Globe}
+                label="Frontend URL"
+                value={window.location.origin}
+              />
+              <MetricCard
+                icon={Server}
+                label="API Base URL"
+                value={import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}
+              />
+            </div>
+          </SettingsCard>
+
+          <SettingsCard
+            title="System Health"
+            description="Current service visibility across the platform control stack."
+          >
+            <div className="grid gap-4 lg:grid-cols-3">
+              <HealthStatusCard
                 label="REST API"
                 status={
                   apiHealth?.status === "ok" || apiHealth?.status === "healthy"
                     ? "operational"
-                    : apiHealth
+                    : apiHealth?.status === "error"
                       ? "error"
                       : "checking"
                 }
+                detail={
+                  apiHealth?.uptime !== undefined
+                    ? `Uptime ${formatUptime(apiHealth.uptime)}`
+                    : "Health endpoint status"
+                }
               />
-              <HealthCard label="WebSocket" status="operational" />
-              <HealthCard
+              <HealthStatusCard
+                label="WebSocket"
+                status={
+                  apiHealth?.status === "ok" || apiHealth?.status === "healthy"
+                    ? "operational"
+                    : apiHealth?.status === "error"
+                      ? "error"
+                      : "checking"
+                }
+                detail="Socket server shares the backend runtime."
+              />
+              <HealthStatusCard
                 label="Database"
                 status={
                   apiHealth?.status === "ok" || apiHealth?.status === "healthy"
                     ? "operational"
-                    : apiHealth
+                    : apiHealth?.status === "error"
                       ? "error"
                       : "checking"
                 }
+                detail="Database health is inferred from backend availability."
               />
             </div>
-            {apiHealth?.uptime !== undefined && (
-              <p className="text-xs text-gray-400 mt-3">
-                Server uptime: {formatUptime(apiHealth.uptime)}
-              </p>
-            )}
-          </Section>
+          </SettingsCard>
 
-          {/* Endpoints */}
-          <Section title="API Endpoints" icon={Zap}>
-            <div className="space-y-2">
-              {[
-                { method: "GET", path: "/api/health" },
-                { method: "GET", path: "/api/superadmin/stats" },
-                { method: "GET", path: "/api/superadmin/companies" },
-                { method: "GET", path: "/api/superadmin/drivers" },
-                { method: "GET", path: "/api/superadmin/orders" },
-                { method: "GET", path: "/api/companies" },
-                { method: "GET", path: "/api/orders" },
-                { method: "GET", path: "/api/drivers" },
-                { method: "POST", path: "/graphql" },
-              ].map((ep) => (
-                <div
-                  key={ep.path}
-                  className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-muted transition-colors"
-                >
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                      ep.method === "GET"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                    }`}
-                  >
-                    {ep.method}
-                  </span>
-                  <code className="text-sm font-mono text-secondary-foreground">
-                    {ep.path}
-                  </code>
-                </div>
-              ))}
+          <SettingsCard
+            title="API Endpoints"
+            description="Core operational endpoints used across platform dashboards."
+          >
+            <div className="grid gap-3">
+              <EndpointRow
+                label="Health check"
+                value={`${import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}/health`}
+              />
+              <EndpointRow
+                label="Companies"
+                value={`${import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}/companies`}
+              />
+              <EndpointRow
+                label="Drivers"
+                value={`${import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}/drivers`}
+              />
+              <EndpointRow
+                label="Orders"
+                value={`${import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}/orders`}
+              />
             </div>
-          </Section>
+          </SettingsCard>
 
-          {/* Account */}
-          <Section title="SuperAdmin Account" icon={Shield}>
-            <InfoRow label="Name" value="Platform Admin" />
-            <InfoRow label="Email" value="admin@dispatchcore.com" />
-            <InfoRow label="Role" value="superadmin" />
-            <div className="pt-4 mt-4 border-t border-border">
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-full text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                Log Out
-              </button>
+          <SettingsCard
+            title="Database"
+            description="Read-only storage context for this environment."
+          >
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <MetricCard icon={Database} label="Engine" value="MySQL" />
+              <MetricCard icon={Server} label="ORM" value="Sequelize v6" />
+              <MetricCard icon={Shield} label="Schema" value="dispatchCore" />
+              <MetricCard
+                icon={Settings}
+                label="Mode"
+                value={import.meta.env.MODE ?? "development"}
+              />
             </div>
-          </Section>
+          </SettingsCard>
 
-          {/* Database */}
-          <Section title="Database" icon={Database}>
-            <InfoRow label="Type" value="MySQL" />
-            <InfoRow label="ORM" value="Sequelize v6" />
-            <InfoRow label="Host" value="localhost (dev)" />
-            <InfoRow label="Database" value="dispatch_core" />
-          </Section>
-        </div>
-      </div>
-    </div>
+          <SettingsCard
+            title="Session"
+            description="Current control-plane session actions."
+          >
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-700"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </button>
+          </SettingsCard>
+        </>
+      )}
+    </SettingsWorkspace>
   );
 }
 
-/* ── Helper Components ── */
-
-function Section({
-  title,
-  icon: Icon,
-  children,
-}: {
-  title: string;
-  icon: typeof Settings;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="bg-card rounded-3xl border border-border shadow-sm">
-      <div className="px-6 py-4 border-b border-border">
-        <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-          <Icon className="h-4 w-4 text-primary" />
-          {title}
-        </h2>
-      </div>
-      <div className="px-6 py-4">{children}</div>
-    </div>
-  );
-}
-
-function InfoRow({
+function Field({
   label,
+  icon: Icon,
   value,
-  onCopy,
-  copied,
+  onChange,
+  type = "text",
 }: {
   label: string;
+  icon: typeof User;
   value: string;
-  onCopy?: (v: string) => void;
-  copied?: boolean;
+  onChange: (value: string) => void;
+  type?: string;
 }) {
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-gray-50 dark:border-gray-800 last:border-0">
-      <span className="text-sm text-gray-500">{label}</span>
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-foreground">
-          {value}
-        </span>
-        {onCopy && (
-          <button
-            onClick={() => onCopy(value)}
-            className="p-1 rounded hover:bg-secondary transition-colors"
-          >
-            {copied ? (
-              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-            ) : (
-              <Copy className="h-3.5 w-3.5 text-gray-400" />
-            )}
-          </button>
-        )}
+    <label className="block">
+      <span className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        {label}
+      </span>
+      <div className="relative">
+        <Icon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type={type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="w-full rounded-full border border-border bg-muted/30 py-3 pl-11 pr-4 text-sm text-foreground outline-none transition-colors focus:border-red-500"
+        />
       </div>
+    </label>
+  );
+}
+
+function ReadOnly({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-3xl border border-border bg-muted/30 px-4 py-4">
+      <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-3 text-sm font-medium text-foreground">{value}</p>
     </div>
   );
 }
 
-function HealthCard({
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Globe;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-3xl border border-border bg-muted/30 p-5">
+      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 text-red-400">
+        <Icon className="h-4 w-4" />
+      </div>
+      <p className="mt-4 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-2 break-all text-sm font-medium text-foreground">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function HealthStatusCard({
   label,
   status,
+  detail,
 }: {
   label: string;
   status: "operational" | "error" | "checking";
+  detail: string;
 }) {
+  const tone =
+    status === "operational"
+      ? "bg-emerald-500/10 text-emerald-400"
+      : status === "error"
+        ? "bg-red-500/10 text-red-400"
+        : "bg-amber-500/10 text-amber-300";
+
+  const text =
+    status === "operational"
+      ? "Operational"
+      : status === "error"
+        ? "Error"
+        : "Checking";
+
   return (
-    <div className="bg-muted rounded-full p-4">
-      <p className="text-xs text-gray-500 font-medium mb-2">{label}</p>
-      <span
-        className={`flex items-center gap-1.5 text-xs font-medium ${
-          status === "operational"
-            ? "text-green-600"
-            : status === "error"
-              ? "text-red-600"
-              : "text-gray-400"
-        }`}
-      >
-        <span
-          className={`h-2 w-2 rounded-full ${
-            status === "operational"
-              ? "bg-green-500"
-              : status === "error"
-                ? "bg-red-500"
-                : "bg-gray-400 animate-pulse"
-          }`}
-        />
-        {status === "operational"
-          ? "Operational"
-          : status === "error"
-            ? "Error"
-            : "Checking..."}
-      </span>
+    <div className="rounded-3xl border border-border bg-muted/30 p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            {label}
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">{detail}</p>
+        </div>
+        <span className={`rounded-full px-3 py-1 text-xs font-medium ${tone}`}>
+          {text}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function EndpointRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-3xl border border-border bg-muted/30 px-4 py-4">
+      <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-3 break-all text-sm font-medium text-foreground">
+        {value}
+      </p>
     </div>
   );
 }

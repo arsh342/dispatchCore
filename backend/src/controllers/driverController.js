@@ -5,10 +5,44 @@
  * and nearby driver queries.
  */
 
-const { Driver, User, Vehicle } = require('../models');
+const { Driver, Vehicle, Company } = require('../models');
 const { success } = require('../utils/response');
-const { NotFoundError } = require('../utils/errors');
+const { NotFoundError, ConflictError, UnauthorizedError } = require('../utils/errors');
 const { DRIVER_TYPE } = require('../utils/constants');
+const { hashPassword, verifyPassword } = require('../utils/password');
+const { serializeDriver } = require('../utils/driverSerializer');
+
+const defaultNotificationPreferences = {
+  new_job_alerts: true,
+  bid_updates: true,
+  delivery_reminders: true,
+  earnings_updates: false,
+  dispatcher_messages: true,
+  promotions: false,
+};
+
+const defaultAppearancePreferences = {
+  theme: 'dark',
+};
+
+const ensureDriverAccess = (req, driver) => {
+  const actorDriverId = req.headers['x-driver-id']
+    ? parseInt(req.headers['x-driver-id'], 10)
+    : null;
+  const actorCompanyId = req.headers['x-company-id']
+    ? parseInt(req.headers['x-company-id'], 10)
+    : null;
+
+  if (actorDriverId && actorDriverId === driver.id) {
+    return;
+  }
+
+  if (actorCompanyId && driver.company_id && actorCompanyId === driver.company_id) {
+    return;
+  }
+
+  throw new UnauthorizedError('You do not have access to update this driver');
+};
 
 const getDrivers = async (req, res, next) => {
   try {
@@ -25,7 +59,6 @@ const getDrivers = async (req, res, next) => {
     const drivers = await Driver.findAll({
       where,
       include: [
-        { model: User, as: 'user', attributes: ['id', 'name', 'email', 'phone'] },
         {
           model: Vehicle,
           as: 'vehicle',
@@ -35,7 +68,7 @@ const getDrivers = async (req, res, next) => {
       order: [['created_at', 'DESC']],
     });
 
-    return success(res, drivers);
+    return success(res, drivers.map(serializeDriver));
   } catch (error) {
     next(error);
   }
@@ -45,7 +78,12 @@ const getDriverById = async (req, res, next) => {
   try {
     const driver = await Driver.findByPk(req.params.id, {
       include: [
-        { model: User, as: 'user', attributes: ['id', 'name', 'email', 'phone'] },
+        {
+          model: Company,
+          as: 'company',
+          attributes: ['id', 'name', 'address'],
+          required: false,
+        },
         {
           model: Vehicle,
           as: 'vehicle',
@@ -58,7 +96,7 @@ const getDriverById = async (req, res, next) => {
       throw new NotFoundError('Driver');
     }
 
-    return success(res, driver);
+    return success(res, serializeDriver(driver));
   } catch (error) {
     next(error);
   }
@@ -169,30 +207,35 @@ const getActiveRoutesForDispatchers = async (req, res, next) => {
 
 /**
  * Create an employed driver under the current company.
- * Creates a User record + linked Driver profile.
+ * Driver identity is stored directly on the drivers table.
  */
 const createDriver = async (req, res, next) => {
   try {
-    const { name, email, phone, license_number, vehicle_type, plate_number, capacity_kg } =
+    const { name, email, phone, password, license_number, vehicle_type, plate_number, capacity_kg } =
       req.body;
 
-    // Create user record first
-    const user = await User.create({
+    const existingDriver = await Driver.findOne({ where: { email } });
+    if (existingDriver) {
+      throw new ConflictError('A driver with this email already exists');
+    }
+
+    const existingCompany = await Company.findOne({ where: { email } });
+    if (existingCompany) {
+      throw new ConflictError('This email is already used by a company account');
+    }
+
+    const driver = await Driver.create({
       name,
       email,
       phone: phone || null,
-      company_id: req.tenantId,
-      role: 'dispatcher', // closest available role — drivers are tracked via Driver model
-    });
-
-    // Create driver profile
-    const driver = await Driver.create({
-      user_id: user.id,
+      password_hash: hashPassword(password),
       company_id: req.tenantId,
       type: DRIVER_TYPE.EMPLOYED,
       status: 'OFFLINE',
       verification_status: 'VERIFIED', // employed drivers auto-verified
       license_number: license_number || null,
+      notification_preferences: defaultNotificationPreferences,
+      appearance_preferences: defaultAppearancePreferences,
     });
 
     // Create vehicle if vehicle_type is provided
@@ -212,8 +255,7 @@ const createDriver = async (req, res, next) => {
     return success(
       res,
       {
-        driver,
-        user: { id: user.id, name: user.name, email: user.email, phone: user.phone },
+        driver: serializeDriver(driver),
         vehicle: vehicle
           ? { id: vehicle.id, type: vehicle.type, plate_number: vehicle.plate_number }
           : null,
@@ -221,6 +263,40 @@ const createDriver = async (req, res, next) => {
       null,
       201,
     );
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createIndependentDriver = async (req, res, next) => {
+  try {
+    const { name, email, phone, password, license_number } = req.body;
+
+    const existingDriver = await Driver.findOne({ where: { email } });
+    if (existingDriver) {
+      throw new ConflictError('A driver with this email already exists');
+    }
+
+    const existingCompany = await Company.findOne({ where: { email } });
+    if (existingCompany) {
+      throw new ConflictError('This email is already used by a company account');
+    }
+
+    const driver = await Driver.create({
+      name,
+      email,
+      phone: phone || null,
+      password_hash: hashPassword(password),
+      company_id: null,
+      type: DRIVER_TYPE.INDEPENDENT,
+      status: 'OFFLINE',
+      verification_status: 'PENDING',
+      license_number: license_number || null,
+      notification_preferences: defaultNotificationPreferences,
+      appearance_preferences: defaultAppearancePreferences,
+    });
+
+    return success(res, serializeDriver(driver), null, 201);
   } catch (error) {
     next(error);
   }
@@ -244,8 +320,179 @@ const updateDriverStatus = async (req, res, next) => {
         error: { message: `Status must be one of: ${validStatuses.join(', ')}` },
       });
     }
+
+    // Enforce valid state transitions
+    const allowedTransitions = {
+      OFFLINE: ['AVAILABLE'],
+      AVAILABLE: ['BUSY', 'OFFLINE'],
+      BUSY: ['AVAILABLE', 'OFFLINE'],
+    };
+
+    const allowed = allowedTransitions[driver.status] || [];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_TRANSITION',
+          message: `Cannot transition from ${driver.status} to ${status}. Allowed: ${allowed.join(', ') || 'none'}`,
+        },
+      });
+    }
+
     await driver.update({ status });
     return res.json({ success: true, data: { id: driver.id, status: driver.status } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateDriver = async (req, res, next) => {
+  try {
+    const driver = await Driver.findByPk(req.params.id, {
+      include: [
+        {
+          model: Company,
+          as: 'company',
+          attributes: ['id', 'name', 'address'],
+          required: false,
+        },
+        { model: Vehicle, as: 'vehicle' },
+      ],
+    });
+
+    if (!driver) {
+      throw new NotFoundError('Driver');
+    }
+
+    ensureDriverAccess(req, driver);
+
+    const {
+      name,
+      email,
+      phone,
+      license_number,
+      notification_preferences,
+      appearance_preferences,
+    } = req.body;
+
+    if (email && email.trim().toLowerCase() !== driver.email) {
+      const existingDriver = await Driver.findOne({
+        where: { email: email.trim().toLowerCase() },
+      });
+      if (existingDriver && existingDriver.id !== driver.id) {
+        throw new ConflictError('A driver with this email already exists');
+      }
+
+      const existingCompany = await Company.findOne({
+        where: { email: email.trim().toLowerCase() },
+      });
+      if (existingCompany) {
+        throw new ConflictError('This email is already used by a company account');
+      }
+    }
+
+    await driver.update({
+      name: name ?? driver.name,
+      email: email ? email.trim().toLowerCase() : driver.email,
+      phone: phone ?? driver.phone,
+      license_number: license_number ?? driver.license_number,
+      notification_preferences:
+        notification_preferences ?? driver.notification_preferences ?? defaultNotificationPreferences,
+      appearance_preferences:
+        appearance_preferences ?? driver.appearance_preferences ?? defaultAppearancePreferences,
+    });
+
+    await driver.reload({
+      include: [
+        {
+          model: Company,
+          as: 'company',
+          attributes: ['id', 'name', 'address'],
+          required: false,
+        },
+        {
+          model: Vehicle,
+          as: 'vehicle',
+          attributes: ['id', 'plate_number', 'type', 'capacity_kg', 'status'],
+          required: false,
+        },
+      ],
+    });
+
+    return success(res, serializeDriver(driver));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateDriverPassword = async (req, res, next) => {
+  try {
+    const driver = await Driver.findByPk(req.params.id);
+
+    if (!driver) {
+      throw new NotFoundError('Driver');
+    }
+
+    ensureDriverAccess(req, driver);
+
+    const { current_password, new_password } = req.body;
+
+    if (!verifyPassword(current_password, driver.password_hash)) {
+      throw new UnauthorizedError('Current password is incorrect');
+    }
+
+    await driver.update({
+      password_hash: hashPassword(new_password),
+    });
+
+    return success(res, { updated: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateDriverVehicle = async (req, res, next) => {
+  try {
+    const driver = await Driver.findByPk(req.params.id, {
+      include: [{ model: Vehicle, as: 'vehicle' }],
+    });
+
+    if (!driver) {
+      throw new NotFoundError('Driver');
+    }
+
+    ensureDriverAccess(req, driver);
+
+    const { type, plate_number, capacity_kg, status } = req.body;
+
+    if (!driver.vehicle) {
+      const vehicle = await Vehicle.create({
+        driver_id: driver.id,
+        company_id: driver.company_id ?? null,
+        type,
+        plate_number,
+        capacity_kg,
+        status: status ?? 'ACTIVE',
+      });
+      return success(res, vehicle, null, 201);
+    }
+
+    if (plate_number && plate_number !== driver.vehicle.plate_number) {
+      const existingVehicle = await Vehicle.findOne({ where: { plate_number } });
+      if (existingVehicle && existingVehicle.id !== driver.vehicle.id) {
+        throw new ConflictError('A vehicle with this plate number already exists');
+      }
+    }
+
+    await driver.vehicle.update({
+      type: type ?? driver.vehicle.type,
+      plate_number: plate_number ?? driver.vehicle.plate_number,
+      capacity_kg: capacity_kg ?? driver.vehicle.capacity_kg,
+      status: status ?? driver.vehicle.status,
+      company_id: driver.company_id ?? null,
+    });
+
+    return success(res, driver.vehicle);
   } catch (error) {
     next(error);
   }
@@ -258,8 +505,12 @@ module.exports = {
   registerRoute,
   findNearbyDrivers,
   createDriver,
+  createIndependentDriver,
   updateDriverStatus,
   getMyRoutes,
   deactivateRoute,
   getActiveRoutesForDispatchers,
+  updateDriver,
+  updateDriverPassword,
+  updateDriverVehicle,
 };

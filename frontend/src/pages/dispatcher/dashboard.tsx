@@ -12,7 +12,6 @@ import MapView from "@/components/map/MapView";
 import type { MapMarker, MapRoute } from "@/components/map/MapView";
 import { get } from "@/lib/api";
 import {
-  Bell,
   Search,
   MessageSquare,
   Plus,
@@ -22,10 +21,10 @@ import {
   CheckCircle2,
   ExternalLink,
   ArrowRight,
-  Filter,
   Loader2,
   X,
   UserPlus,
+  ChevronDown,
 } from "lucide-react";
 import LoadingPackage from "@/components/ui/loading-package";
 import { AddressInput } from "@/components/AddressInput";
@@ -338,16 +337,6 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <button className="relative p-2.5 rounded-full bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-                <Bell className="h-[18px] w-[18px]" />
-                <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full" />
-              </button>
-              <button className="p-2.5 rounded-full bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-                <Search className="h-[18px] w-[18px]" />
-              </button>
-              <button className="p-2.5 rounded-full bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-                <MessageSquare className="h-[18px] w-[18px]" />
-              </button>
               <button
                 onClick={() => setShowCreateOrder(true)}
                 className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
@@ -428,7 +417,6 @@ export default function DashboardPage() {
                               <span className="text-xs text-muted-foreground">
                                 {s.courierIcon} {s.courier}
                               </span>
-                              <ExternalLink className="h-3 w-3 text-gray-400 cursor-pointer hover:text-primary" />
                             </div>
                             <div className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground">
                               <span className="truncate max-w-[140px]">
@@ -566,23 +554,18 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-foreground">Track Order</h2>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 bg-card border border-border rounded-full px-3 py-2">
-                  <Search className="h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-transparent outline-none text-sm text-secondary-foreground placeholder:text-gray-400 w-32"
-                  />
-                  <span className="text-[10px] text-gray-400 bg-secondary px-1.5 py-0.5 rounded">
-                    ⌘F
-                  </span>
-                </div>
-                <button className="p-2 rounded-full bg-card border border-border text-gray-500 hover:text-foreground transition-colors">
-                  <Filter className="h-4 w-4" />
-                </button>
+              <div className="flex items-center gap-2 bg-card border border-border rounded-full px-3 py-2">
+                <Search className="h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-transparent outline-none text-sm text-secondary-foreground placeholder:text-gray-400 w-32"
+                />
+                <span className="text-[10px] text-gray-400 bg-secondary px-1.5 py-0.5 rounded">
+                  ⌘F
+                </span>
               </div>
             </div>
 
@@ -750,9 +733,6 @@ export default function DashboardPage() {
                                 <MessageSquare className="h-3.5 w-3.5" />
                               </button>
                             )}
-                            <button className="p-1.5 rounded-lg hover:bg-secondary text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </button>
                           </div>
                         </td>
                       </tr>
@@ -841,18 +821,21 @@ export default function DashboardPage() {
                   <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                     Priority
                   </label>
-                  <select
-                    value={orderForm.priority}
-                    onChange={(e) =>
-                      setOrderForm((p) => ({ ...p, priority: e.target.value }))
-                    }
-                    className="w-full px-4 py-2.5 rounded-full border border-border bg-card text-sm text-foreground outline-none focus:border-primary"
-                  >
-                    <option value="LOW">Low</option>
-                    <option value="NORMAL">Normal</option>
-                    <option value="HIGH">High</option>
-                    <option value="URGENT">Urgent</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={orderForm.priority}
+                      onChange={(e) =>
+                        setOrderForm((p) => ({ ...p, priority: e.target.value }))
+                      }
+                      className="w-full appearance-none rounded-full border border-border bg-card px-4 py-2.5 pr-12 text-sm text-foreground outline-none focus:border-primary"
+                    >
+                      <option value="LOW">Low</option>
+                      <option value="NORMAL">Normal</option>
+                      <option value="HIGH">High</option>
+                      <option value="URGENT">Urgent</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  </div>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
@@ -883,7 +866,7 @@ export default function DashboardPage() {
                   onChange={(e) =>
                     setOrderForm((p) => ({ ...p, notes: e.target.value }))
                   }
-                  className="w-full px-4 py-2.5 rounded-full border border-border bg-card text-sm text-foreground outline-none focus:border-primary resize-none"
+                  className="w-full px-4 py-2.5 rounded-3xl border border-border bg-card text-sm text-foreground outline-none focus:border-primary resize-none"
                 />
               </div>
 
@@ -1091,12 +1074,12 @@ export default function DashboardPage() {
 
             <div className="p-5 space-y-4">
               {assignError && (
-                <div className="p-3 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+                <div className="p-3 rounded-3xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
                   {assignError}
                 </div>
               )}
 
-              <div className="p-3 rounded-full bg-muted text-sm">
+              <div className="p-3 rounded-3xl bg-muted text-sm">
                 <p className="font-semibold text-foreground">
                   {assignShipment.id}
                 </p>
@@ -1109,18 +1092,21 @@ export default function DashboardPage() {
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                   Select Driver *
                 </label>
-                <select
-                  value={selectedDriverId}
-                  onChange={(e) => setSelectedDriverId(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-full border border-border bg-card text-sm text-foreground outline-none focus:border-primary"
-                >
-                  <option value="">Choose a driver...</option>
-                  {companyDrivers.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.user?.name || `Driver #${d.id}`}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={selectedDriverId}
+                    onChange={(e) => setSelectedDriverId(e.target.value)}
+                    className="w-full appearance-none px-4 pe-12 py-2.5 rounded-full border border-border bg-card text-sm text-foreground outline-none focus:border-primary cursor-pointer"
+                  >
+                    <option value="">Choose a driver...</option>
+                    {companyDrivers.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.user?.name || `Driver #${d.id}`}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                </div>
                 {companyDrivers.length === 0 && (
                   <p className="text-xs text-gray-400 mt-1.5">
                     No drivers found. Add drivers from the Drivers page first.
@@ -1217,7 +1203,7 @@ export default function DashboardPage() {
                 onClick={() => {
                   navigator.clipboard.writeText(createdTrackingLink);
                 }}
-                className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+                className="shrink-0 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
               >
                 Copy
               </button>

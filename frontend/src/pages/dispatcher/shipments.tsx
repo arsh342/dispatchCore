@@ -192,7 +192,7 @@ export default function ShipmentsPage() {
                   onChange={(e) =>
                     setStatusFilter(e.target.value as ShipmentStatus | "ALL")
                   }
-                  className="appearance-none bg-card border border-border rounded-full px-4 py-2 pr-9 text-sm text-secondary-foreground cursor-pointer outline-none"
+                  className="appearance-none bg-card border border-border rounded-full px-4 py-2 pe-12 text-sm text-secondary-foreground cursor-pointer outline-none"
                 >
                   <option value="ALL">All Status</option>
                   {Object.keys(statusConfig).map((s) => (
@@ -201,7 +201,7 @@ export default function ShipmentsPage() {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
               </div>
             </div>
 

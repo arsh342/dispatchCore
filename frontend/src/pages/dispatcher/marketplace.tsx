@@ -22,22 +22,25 @@ import {
   Gavel,
   CheckCircle,
   Upload,
-  DollarSign,
+  IndianRupee,
   X,
   MessageSquare,
   TrendingUp,
 } from "lucide-react";
 import LoadingPackage from "@/components/ui/loading-package";
+import { formatINR } from "@/lib/currency";
 
 /* ─── Priority styles ─── */
 const priorityDot: Record<string, string> = {
   low: "bg-gray-400",
+  normal: "bg-blue-400",
   medium: "bg-blue-400",
   high: "bg-amber-500",
   urgent: "bg-red-500",
 };
 const priorityLabel: Record<string, string> = {
   low: "Low",
+  normal: "Normal",
   medium: "Medium",
   high: "High",
   urgent: "Urgent",
@@ -114,7 +117,7 @@ export default function MarketplacePage() {
                     onChange={(e) =>
                       setSortBy(e.target.value as MarketplaceSortBy)
                     }
-                    className="appearance-none bg-card border border-border rounded-full px-4 py-2 pr-9 text-sm text-secondary-foreground cursor-pointer outline-none focus:border-primary"
+                    className="appearance-none bg-card border border-border rounded-full px-4 py-2 pe-12 text-sm text-secondary-foreground cursor-pointer outline-none focus:border-primary"
                   >
                     <option value="priority">Priority</option>
                     <option value="newest">Newest</option>
@@ -122,7 +125,7 @@ export default function MarketplacePage() {
                     <option value="price">Price</option>
                     <option value="weight">Weight</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
                 </div>
               </div>
 
@@ -236,7 +239,7 @@ export default function MarketplacePage() {
                         {/* Price + Badges */}
                         <div className="flex items-center justify-between mb-3">
                           <p className="text-xl font-bold text-foreground">
-                            ${order.listedPrice.toFixed(2)}
+                            {formatINR(order.listedPrice)}
                           </p>
                           <div className="flex gap-1.5">
                             <span className="text-[11px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
@@ -376,7 +379,7 @@ export default function MarketplacePage() {
                             Offered
                           </p>
                           <p className="text-lg font-bold text-foreground">
-                            ${bid.offeredPrice.toFixed(2)}
+                            {formatINR(bid.offeredPrice)}
                           </p>
                         </div>
                         <div className="text-xs text-gray-300">vs</div>
@@ -385,7 +388,7 @@ export default function MarketplacePage() {
                             Your Price
                           </p>
                           <p className="text-lg font-semibold text-gray-400 line-through">
-                            ${bid.listedPrice.toFixed(2)}
+                            {formatINR(bid.listedPrice)}
                           </p>
                         </div>
                         <div
@@ -397,7 +400,7 @@ export default function MarketplacePage() {
                         >
                           {bid.offeredPrice >= bid.listedPrice
                             ? "At price"
-                            : `-$${(bid.listedPrice - bid.offeredPrice).toFixed(2)}`}
+                            : `-${formatINR(bid.listedPrice - bid.offeredPrice)}`}
                         </div>
                       </div>
 
@@ -464,7 +467,7 @@ export default function MarketplacePage() {
               <TrendingUp className="h-4 w-4" />
               Avg Bid:{" "}
               <span className="font-bold text-foreground">
-                ${stats?.avgBidPrice?.toFixed(2) ?? "—"}
+                {stats?.avgBidPrice !== undefined ? formatINR(stats.avgBidPrice) : "—"}
               </span>
             </div>
           </div>
@@ -511,10 +514,10 @@ export default function MarketplacePage() {
 
                 <div className="flex gap-2">
                   <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
-                    ⚖️ {listingModal.weight} kg
+                    {listingModal.weight} kg
                   </span>
                   <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
-                    📏 {listingModal.distance} km
+                    {listingModal.distance} km
                   </span>
                   <span
                     className={`text-xs px-2.5 py-1 rounded-full ${
@@ -536,7 +539,7 @@ export default function MarketplacePage() {
                   Set listed price
                 </span>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     type="number"
                     min="0"

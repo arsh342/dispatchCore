@@ -39,12 +39,12 @@ class AssignmentService {
    * @param {number} orderId - Order to assign
    * @param {number} driverId - Target driver
    * @param {number|null} vehicleId - Optional vehicle
-   * @param {number} dispatcherId - Who is making the assignment
+   * @param {number} companyId - Company making the assignment
    * @param {Object} [options] - Additional options
    * @param {boolean} [options.allowBusy=false] - Allow assigning to a BUSY driver (e.g. route-match multi-drop)
    * @returns {Promise<Assignment>} The created assignment
    */
-  async assignOrder(orderId, driverId, vehicleId, dispatcherId, options = {}) {
+  async assignOrder(orderId, driverId, vehicleId, companyId, options = {}) {
     const transaction = await sequelize.transaction({
       isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE,
     });
@@ -97,13 +97,24 @@ class AssignmentService {
         await driver.update({ status: DRIVER_STATUS.BUSY }, { transaction });
       }
 
+      // Auto-resolve vehicle: use the provided vehicleId, or look up the driver's vehicle
+      let resolvedVehicleId = vehicleId || null;
+      if (!resolvedVehicleId) {
+        const driverVehicle = await Vehicle.findOne({
+          where: { driver_id: driverId },
+          attributes: ['id'],
+          transaction,
+        });
+        if (driverVehicle) resolvedVehicleId = driverVehicle.id;
+      }
+
       // Create assignment record
       const assignment = await Assignment.create(
         {
           order_id: orderId,
           driver_id: driverId,
-          vehicle_id: vehicleId || null,
-          assigned_by: dispatcherId,
+          vehicle_id: resolvedVehicleId,
+          assigned_by_company_id: companyId,
           source: ASSIGNMENT_SOURCE.DIRECT,
         },
         { transaction },
@@ -115,7 +126,7 @@ class AssignmentService {
           assignment_id: assignment.id,
           event_type: EVENT_TYPE.ASSIGNED,
           timestamp: new Date(),
-          notes: `Directly assigned by dispatcher #${dispatcherId}`,
+          notes: `Directly assigned by company #${companyId}`,
         },
         { transaction },
       );

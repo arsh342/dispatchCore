@@ -6,13 +6,13 @@
  */
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { SuperAdminSidebar } from "@/components/dashboard/superadmin-sidebar";
 import { useTheme } from "@/hooks/useTheme";
 import {
   Truck,
   Search,
   AlertCircle,
-  Bell,
   UserCheck,
   Clock,
   XCircle,
@@ -56,6 +56,7 @@ const verificationColors: Record<
 
 export default function SuperAdminDriversPage() {
   const { isDark, setIsDark } = useTheme();
+  const [searchParams] = useSearchParams();
   const [drivers, setDrivers] = useState<DriverSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +77,13 @@ export default function SuperAdminDriversPage() {
     })();
   }, []);
 
+  useEffect(() => {
+    const companyQuery = searchParams.get("company");
+    if (companyQuery) {
+      setSearchTerm(companyQuery);
+    }
+  }, [searchParams]);
+
   const filtered = drivers.filter((d) => {
     const matchesSearch =
       d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -92,6 +100,16 @@ export default function SuperAdminDriversPage() {
   const verified = drivers.filter(
     (d) => d.verificationStatus === "VERIFIED",
   ).length;
+
+  const formatJoinDate = (value: string | null | undefined) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
+    });
+  };
 
   return (
     <div className="flex min-h-screen w-full">
@@ -110,9 +128,6 @@ export default function SuperAdminDriversPage() {
                 Platform-wide driver management across all companies.
               </p>
             </div>
-            <button className="relative p-2.5 rounded-full hover:bg-secondary transition-colors">
-              <Bell className="h-5 w-5 text-gray-500" />
-            </button>
           </div>
         </header>
 
@@ -323,11 +338,7 @@ export default function SuperAdminDriversPage() {
                         {d.companyName ?? "Independent"}
                       </span>
                       <span>
-                        Joined{" "}
-                        {new Date(d.createdAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        Joined {formatJoinDate(d.createdAt)}
                       </span>
                     </div>
                   </div>

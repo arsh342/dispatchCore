@@ -116,7 +116,7 @@ export default function EmployedDriverOrdersPage() {
               <button
                 key={s}
                 onClick={() => setFilter(s)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${filter === s ? "bg-primary/10 text-primary" : "text-gray-500 hover:bg-secondary"}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-3xl text-xs font-medium whitespace-nowrap transition-colors ${filter === s ? "bg-primary/10 text-primary" : "text-gray-500 hover:bg-secondary"}`}
               >
                 {s === "ALL" ? "All" : (statusConfig[s]?.label ?? s)}
                 <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded-full">

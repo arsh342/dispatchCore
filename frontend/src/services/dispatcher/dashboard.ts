@@ -13,13 +13,13 @@ import type {
 } from "@/types/dispatcher/dashboard";
 import { get, post, put, qs } from "@/lib/api";
 import { calcDistance } from "@/lib/geo";
+import { formatINR } from "@/lib/currency";
 
 // ── Backend response shapes (before transform) ──
 
 interface BackendOrder {
   id: number;
   company_id: number;
-  customer_id: number | null;
   tracking_code: string;
   status: string;
   listed_price: string | null;
@@ -32,9 +32,12 @@ interface BackendOrder {
   delivery_address: string | null;
   priority: string;
   notes: string | null;
+  recipient_name?: string | null;
+  recipient_phone?: string | null;
+  recipient_email?: string | null;
   createdAt: string;
   updatedAt: string;
-  bids?: Array<{ id: number }>;
+  bids?: Array<{ id: number; offered_price: string; status: string }>;
   assignment?: {
     id: number;
     driver_id: number;
@@ -109,9 +112,12 @@ function orderToShipment(order: BackendOrder): Shipment {
       order.delivery_lng,
     ),
     weight: order.weight_kg ? `${parseFloat(order.weight_kg)} kg` : "—",
-    payment: order.listed_price
-      ? `$${parseFloat(order.listed_price).toFixed(2)}`
-      : "—",
+    payment: (() => {
+      const acceptedBid = order.bids?.find(b => b.status === 'ACCEPTED');
+      if (acceptedBid) return formatINR(parseFloat(acceptedBid.offered_price));
+      if (order.listed_price) return formatINR(parseFloat(order.listed_price));
+      return "—";
+    })(),
     date: new Date(order.createdAt).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",

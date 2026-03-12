@@ -11,7 +11,7 @@ import type { ChatChannel } from "@/services/messaging";
 import { useTheme } from "@/hooks/useTheme";
 
 export default function MessagesPage() {
-  const userId = localStorage.getItem("dc_user_id");
+  const companyId = localStorage.getItem("dc_company_id");
   const userName = localStorage.getItem("dc_user_name") || "Dispatcher";
   const { isDark, setIsDark } = useTheme();
   const [searchParams] = useSearchParams();
@@ -26,7 +26,7 @@ export default function MessagesPage() {
       <main className="flex-1 flex flex-col p-4 overflow-hidden">
         <ChatPanel
           role="dispatcher"
-          senderId={userId ? Number(userId) : null}
+          senderId={companyId ? Number(companyId) : null}
           senderName={userName}
           bubbleColor="bg-primary"
           bubbleText="text-white"

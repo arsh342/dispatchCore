@@ -29,6 +29,11 @@ const HistoryService = require('./src/services/historyService');
 
 // ── Bootstrap ──
 
+const wsCorsOrigins = env.wsCorsOrigin
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const startServer = async () => {
   try {
     // 1. Test database connection
@@ -45,7 +50,7 @@ const startServer = async () => {
     // 3. Initialize Socket.io
     const io = new SocketIO(server, {
       cors: {
-        origin: env.wsCorsOrigin,
+        origin: wsCorsOrigins,
         methods: ['GET', 'POST'],
       },
       pingTimeout: 60000,

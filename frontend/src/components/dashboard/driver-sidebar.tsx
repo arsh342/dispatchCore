@@ -3,11 +3,9 @@ import {
   LayoutDashboard,
   Gavel,
   Package,
-  DollarSign,
+  IndianRupee,
   MessageSquare,
   ChevronsRight,
-  Moon,
-  Sun,
   Truck,
   Route,
   LogOut,
@@ -26,13 +24,13 @@ const navItems = [
   { icon: Package, label: "My Bids", href: "/driver/bids" },
   { icon: Truck, label: "Active Deliveries", href: "/driver/deliveries" },
   { icon: Route, label: "My Routes", href: "/driver/routes" },
-  { icon: DollarSign, label: "Earnings", href: "/driver/earnings" },
+  { icon: IndianRupee, label: "Earnings", href: "/driver/earnings" },
   { icon: MessageSquare, label: "Messages", href: "/driver/messages" },
 ];
 
 export function DriverSidebar({
-  isDark,
-  setIsDark,
+  isDark: _isDark,
+  setIsDark: _setIsDark,
   userName: propName,
 }: SidebarProps) {
   const [open, setOpen] = useState(true);
@@ -142,33 +140,6 @@ export function DriverSidebar({
           )}
         </button>
 
-        {/* Dark mode toggle */}
-        <div
-          className={`flex items-center ${open ? "gap-1 bg-secondary rounded-full p-1" : "flex-col gap-1"}`}
-        >
-          <button
-            onClick={() => setIsDark(false)}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-medium transition-colors ${
-              !isDark
-                ? "bg-white dark:bg-gray-700 shadow-sm text-foreground"
-                : "text-muted-foreground"
-            }`}
-          >
-            <Sun className="h-3.5 w-3.5" />
-            {open && "Light"}
-          </button>
-          <button
-            onClick={() => setIsDark(true)}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-medium transition-colors ${
-              isDark
-                ? "bg-white dark:bg-accent shadow-sm text-foreground"
-                : "text-muted-foreground"
-            }`}
-          >
-            <Moon className="h-3.5 w-3.5" />
-            {open && "Dark"}
-          </button>
-        </div>
       </div>
 
       {/* Collapse toggle */}

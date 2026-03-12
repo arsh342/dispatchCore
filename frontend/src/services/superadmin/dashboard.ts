@@ -20,11 +20,11 @@ export interface CompanySummary {
   id: number;
   name: string;
   address: string | null;
+  location: string | null;
   planType: string;
   createdAt: string;
   orderCount: number;
   driverCount: number;
-  userCount: number;
 }
 
 export interface DriverSummary {

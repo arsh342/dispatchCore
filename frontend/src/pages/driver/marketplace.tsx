@@ -21,7 +21,7 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  DollarSign,
+  IndianRupee,
   X,
   MessageSquare,
   Send,
@@ -31,16 +31,19 @@ import {
     Scale,
 } from "lucide-react";
 import LoadingPackage from "@/components/ui/loading-package";
+import { formatINR } from "@/lib/currency";
 
 /* ─── Priority styles ─── */
 const priorityDot: Record<string, string> = {
   low: "bg-gray-400",
+  normal: "bg-blue-400",
   medium: "bg-blue-400",
   high: "bg-amber-500",
   urgent: "bg-red-500",
 };
 const priorityLabel: Record<string, string> = {
   low: "Low",
+  normal: "Normal",
   medium: "Medium",
   high: "High",
   urgent: "Urgent",
@@ -147,7 +150,7 @@ export default function DriverMarketplacePage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as DriverSortBy)}
-                  className="appearance-none bg-card border border-border rounded-full px-4 py-2 pr-9 text-sm text-secondary-foreground cursor-pointer outline-none focus:border-primary"
+                  className="appearance-none bg-card border border-border rounded-full px-4 py-2 pe-12 text-sm text-secondary-foreground cursor-pointer outline-none focus:border-primary"
                 >
                   <option value="priority">Priority</option>
                   <option value="newest">Newest</option>
@@ -155,7 +158,7 @@ export default function DriverMarketplacePage() {
                   <option value="price">Highest Pay</option>
                   <option value="weight">Lightest</option>
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
               </div>
             </div>
 
@@ -217,7 +220,7 @@ export default function DriverMarketplacePage() {
                       {/* Price + Badges */}
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-xl font-bold text-foreground">
-                          ${listing.listedPrice.toFixed(2)}
+                          {formatINR(listing.listedPrice)}
                         </p>
                         <div className="flex gap-1.5">
                           <span className="text-[11px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
@@ -331,7 +334,7 @@ export default function DriverMarketplacePage() {
                               Your Offer
                             </p>
                             <p className="text-lg font-bold text-foreground">
-                              ${bid.offeredPrice.toFixed(2)}
+                              {formatINR(bid.offeredPrice)}
                             </p>
                           </div>
                           <div className="text-xs text-gray-300">vs</div>
@@ -340,7 +343,7 @@ export default function DriverMarketplacePage() {
                               Listed
                             </p>
                             <p className="text-lg font-semibold text-gray-400">
-                              ${bid.listedPrice.toFixed(2)}
+                              {formatINR(bid.listedPrice)}
                             </p>
                           </div>
                         </div>
@@ -383,11 +386,11 @@ export default function DriverMarketplacePage() {
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <span className="font-bold text-secondary-foreground">
-                            ${bid.offeredPrice.toFixed(2)}
+                            {formatINR(bid.offeredPrice)}
                           </span>
                           <span className="text-gray-400">→</span>
                           <span className="text-gray-400 line-through">
-                            ${bid.listedPrice.toFixed(2)}
+                            {formatINR(bid.listedPrice)}
                           </span>
                         </div>
                         {bid.status === "accepted" && bid.pickupAddress && (
@@ -435,7 +438,7 @@ export default function DriverMarketplacePage() {
               <TrendingUp className="h-4 w-4" />
               Earnings:{" "}
               <span className="font-bold text-green-600">
-                ${stats?.earnings?.toFixed(2) ?? "—"}
+                {stats?.earnings !== undefined ? formatINR(stats.earnings) : "—"}
               </span>
             </div>
           </div>
@@ -468,7 +471,7 @@ export default function DriverMarketplacePage() {
                   <div className="text-right">
                     <p className="text-xs text-gray-400 mb-0.5">Listed Price</p>
                     <p className="text-lg font-bold text-foreground">
-                      ${bidModal.listedPrice.toFixed(2)}
+                      {formatINR(bidModal.listedPrice)}
                     </p>
                   </div>
                 </div>
@@ -510,7 +513,7 @@ export default function DriverMarketplacePage() {
                   Your offer
                 </span>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     type="number"
                     min="0"
@@ -523,8 +526,8 @@ export default function DriverMarketplacePage() {
                 </div>
                 {bidPrice && parseFloat(bidPrice) < bidModal.listedPrice && (
                   <p className="text-xs text-green-600 mt-1">
-                    Saving the dispatcher $
-                    {(bidModal.listedPrice - parseFloat(bidPrice)).toFixed(2)}{" "}
+                    Saving the dispatcher{" "}
+                    {formatINR(bidModal.listedPrice - parseFloat(bidPrice))}{" "}
                     from listed price
                   </p>
                 )}
@@ -540,7 +543,7 @@ export default function DriverMarketplacePage() {
                   onChange={(e) => setBidMessage(e.target.value)}
                   placeholder="e.g. I'm nearby, can pick up in 5 mins..."
                   rows={2}
-                  className="w-full px-4 py-2.5 rounded-full border border-border bg-card text-foreground outline-none focus:border-primary text-sm resize-none"
+                  className="w-full px-4 py-2.5 rounded-3xl border border-border bg-card text-foreground outline-none focus:border-primary text-sm resize-none"
                 />
               </label>
 

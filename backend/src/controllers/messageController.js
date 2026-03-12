@@ -11,7 +11,7 @@
  */
 
 const { Op } = require('sequelize');
-const { Message, Order, Assignment, Driver, User } = require('../models');
+const { Message, Order, Assignment, Driver, Company } = require('../models');
 const { success } = require('../utils/response');
 const { NotFoundError, ForbiddenError, ValidationError } = require('../utils/errors');
 
@@ -40,41 +40,25 @@ function otherRole(channel, myRole) {
 async function getOrderParticipants(order) {
   const participants = {};
 
-  // Dispatcher (the user who created the order)
-  if (order.customer_id) {
-    const user = await User.findByPk(order.customer_id);
-    if (user) {
-      participants.dispatcher = {
-        type: 'dispatcher',
-        id: user.id,
-        name: user.name || user.email,
-      };
-    }
-  }
-  // Fallback: any dispatcher from the company
-  if (!participants.dispatcher) {
-    const companyUser = await User.findOne({
-      where: { company_id: order.company_id, role: 'dispatcher' },
-    });
-    if (companyUser) {
-      participants.dispatcher = {
-        type: 'dispatcher',
-        id: companyUser.id,
-        name: companyUser.name || companyUser.email,
-      };
-    }
+  const company = await Company.findByPk(order.company_id);
+  if (company) {
+    participants.dispatcher = {
+      type: 'dispatcher',
+      id: company.id,
+      name: company.name || company.email,
+    };
   }
 
   // Assigned driver
   const assignment = await Assignment.findOne({
     where: { order_id: order.id },
-    include: [{ model: Driver, as: 'driver', include: [{ model: User, as: 'user' }] }],
+    include: [{ model: Driver, as: 'driver', attributes: ['id', 'name', 'email', 'phone'] }],
   });
   if (assignment && assignment.driver) {
     participants.driver = {
       type: 'driver',
       id: assignment.driver.id,
-      name: assignment.driver.user?.name || `Driver #${assignment.driver.id}`,
+      name: assignment.driver.name || `Driver #${assignment.driver.id}`,
     };
   }
 

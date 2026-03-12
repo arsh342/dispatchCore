@@ -9,6 +9,8 @@ import { useState, useEffect, useCallback } from "react";
 import { DriverSidebar } from "@/components/dashboard/driver-sidebar";
 import { useTheme } from "@/hooks/useTheme";
 import { AddressInput } from "@/components/AddressInput";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 import { get, post, del } from "@/lib/api";
 import {
   Route,
@@ -380,29 +382,17 @@ export default function DriverRoutesPage() {
 
                 {/* Departure date/time */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-sm font-medium text-secondary-foreground mb-1.5 block">
-                      Date
-                    </label>
-                    <input
-                      type="date"
-                      value={departureDate}
-                      onChange={(e) => setDepartureDate(e.target.value)}
-                      min={new Date().toISOString().split("T")[0]}
-                      className="w-full px-4 py-2.5 rounded-full border border-border bg-muted text-foreground outline-none focus:border-primary text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-secondary-foreground mb-1.5 block">
-                      Time
-                    </label>
-                    <input
-                      type="time"
-                      value={departureTime}
-                      onChange={(e) => setDepartureTime(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-full border border-border bg-muted text-foreground outline-none focus:border-primary text-sm"
-                    />
-                  </div>
+                  <DatePicker
+                    label="Date"
+                    value={departureDate}
+                    onChange={setDepartureDate}
+                    min={new Date().toISOString().split("T")[0]}
+                  />
+                  <TimePicker
+                    label="Time"
+                    value={departureTime}
+                    onChange={setDepartureTime}
+                  />
                 </div>
 
                 {error && (

@@ -31,7 +31,6 @@ const sequelize = new Sequelize(env.db.name, env.db.user, env.db.pass, {
 // Register models
 const models = {
   Company: require('./Company')(sequelize),
-  User: require('./User')(sequelize),
   Driver: require('./Driver')(sequelize),
   DriverRoute: require('./DriverRoute')(sequelize),
   Vehicle: require('./Vehicle')(sequelize),
@@ -43,6 +42,7 @@ const models = {
   DriverLocationLog: require('./DriverLocationLog')(sequelize),
   DeliveryEvent: require('./DeliveryEvent')(sequelize),
   Message: require('./Message')(sequelize),
+  SuperadminSetting: require('./SuperadminSetting')(sequelize),
 };
 
 // Setup associations

@@ -5,6 +5,7 @@ import {
   Search,
   Plus,
   Loader2,
+  ChevronDown,
   X,
   Users,
   Mail,
@@ -26,7 +27,6 @@ interface DriverUser {
 
 interface DriverRecord {
   id: number;
-  user_id: number;
   company_id: number;
   type: "EMPLOYED" | "INDEPENDENT";
   status: "AVAILABLE" | "BUSY" | "OFFLINE";
@@ -58,6 +58,7 @@ export default function DriversPage() {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    password: "",
     phone: "",
     license_number: "",
     vehicle_type: "",
@@ -90,8 +91,8 @@ export default function DriversPage() {
 
   const handleAddDriver = async () => {
     setFormError("");
-    if (!form.name || !form.email) {
-      setFormError("Name and email are required.");
+    if (!form.name || !form.email || !form.password) {
+      setFormError("Name, email, and password are required.");
       return;
     }
     setFormSubmitting(true);
@@ -111,6 +112,7 @@ export default function DriversPage() {
       setForm({
         name: "",
         email: "",
+        password: "",
         phone: "",
         license_number: "",
         vehicle_type: "",
@@ -314,6 +316,23 @@ export default function DriversPage() {
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                  Temporary Password *
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="password"
+                    placeholder="At least 6 characters"
+                    value={form.password}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, password: e.target.value }))
+                    }
+                    className="w-full pl-10 pr-4 py-2.5 rounded-full border border-border bg-card text-sm text-foreground outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                   Phone
                 </label>
                 <div className="relative">
@@ -356,13 +375,14 @@ export default function DriversPage() {
                       onChange={(e) =>
                         setForm((p) => ({ ...p, vehicle_type: e.target.value }))
                       }
-                      className="w-full pl-10 pr-4 py-2.5 rounded-full border border-border bg-card text-sm text-foreground outline-none focus:border-primary appearance-none"
+                      className="w-full pl-10 pe-12 py-2.5 rounded-full border border-border bg-card text-sm text-foreground outline-none focus:border-primary appearance-none cursor-pointer"
                     >
                       <option value="">Select type</option>
                       <option value="BIKE">Bike</option>
                       <option value="VAN">Van</option>
                       <option value="TRUCK">Truck</option>
                     </select>
+                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   </div>
                 </div>
                 <div>

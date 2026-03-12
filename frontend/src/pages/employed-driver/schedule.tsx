@@ -89,7 +89,7 @@ export default function EmployedDriverSchedulePage() {
           import.meta.env.VITE_API_URL || "http://localhost:8000/api";
         const cid = localStorage.getItem("dc_company_id") || "";
         const did = localStorage.getItem("dc_driver_id") || "";
-        const res = await fetch(`${API_URL}/orders`, {
+        const res = await fetch(`${API_URL}/orders?for_driver=${did}&limit=200`, {
           headers: { "x-company-id": cid, "x-driver-id": did },
         });
         const data = await res.json();

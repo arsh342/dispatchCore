@@ -5,7 +5,7 @@
  * Each message is scoped to a specific order (the shared context).
  *
  * Participant types:
- *   dispatcher — company dispatcher (sender_id = user.id)
+ *   dispatcher — company account     (sender_id = company.id)
  *   driver     — assigned driver    (sender_id = driver.id)
  *   recipient  — delivery recipient (identified by order tracking_code, no DB user)
  */
@@ -38,7 +38,7 @@ module.exports = (sequelize) => {
       sender_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
-        comment: 'user.id for dispatcher, driver.id for driver, null for recipient',
+        comment: 'company.id for dispatcher, driver.id for driver, null for recipient',
       },
       sender_name: {
         type: DataTypes.STRING(100),

@@ -6,7 +6,6 @@
  *
  * Headers:
  *   x-company-id  — Tenant scoping (required for most endpoints)
- *   x-user-id     — Dispatcher identity (future: JWT)
  *   x-driver-id   — Driver identity (future: JWT)
  */
 
@@ -17,17 +16,15 @@ const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 /**
  * Dev-mode identity headers.
  * In production these will come from auth context / JWT.
- * Values are set during login via the user lookup flow.
+ * Values are set during login via the account-based auth flow.
  */
 function getIdentityHeaders(): Record<string, string> {
   const headers: Record<string, string> = {};
 
   const companyId = localStorage.getItem("dc_company_id");
-  const userId = localStorage.getItem("dc_user_id");
   const driverId = localStorage.getItem("dc_driver_id");
 
   if (companyId) headers["x-company-id"] = companyId;
-  if (userId) headers["x-user-id"] = userId;
   if (driverId) headers["x-driver-id"] = driverId;
 
   return headers;
@@ -134,6 +131,15 @@ export async function put<T>(endpoint: string, body?: unknown): Promise<T> {
 /** DELETE request */
 export async function del<T = void>(endpoint: string): Promise<T> {
   const { data } = await request<T>(endpoint, { method: "DELETE" });
+  return data;
+}
+
+/** PATCH request */
+export async function patch<T>(endpoint: string, body?: unknown): Promise<T> {
+  const { data } = await request<T>(endpoint, {
+    method: "PATCH",
+    body: body ? JSON.stringify(body) : undefined,
+  });
   return data;
 }
 

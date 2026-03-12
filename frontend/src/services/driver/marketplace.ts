@@ -13,19 +13,40 @@ import type {
 export type { DriverBid } from "@/types/driver/marketplace";
 import { get, post } from "@/lib/api";
 
+/* ─── Haversine distance (km) between two lat/lng points ─── */
+function haversineKm(
+  lat1: number, lng1: number,
+  lat2: number, lng2: number,
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 // ── Backend types ──
 
 interface BackendListing {
   id: number;
   trackingCode: string;
   pickupAddress: string;
+  pickupLat: number | null;
+  pickupLng: number | null;
   deliveryAddress: string;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
   listedPrice: number;
   weight: number;
   priority: string;
   postedAt: string;
   bidsCount: number;
   companyId: number;
+  companyName: string | null;
 }
 
 interface BackendBid {
@@ -40,6 +61,10 @@ interface BackendBid {
 // ── Transforms ──
 
 function listingToFrontend(l: BackendListing): DriverMarketplaceListing {
+  let distance = 0;
+  if (l.pickupLat != null && l.pickupLng != null && l.deliveryLat != null && l.deliveryLng != null) {
+    distance = Math.round(haversineKm(l.pickupLat, l.pickupLng, l.deliveryLat, l.deliveryLng) * 10) / 10;
+  }
   return {
     id: `ORD-${l.id}`,
     trackingCode: l.trackingCode,
@@ -47,11 +72,11 @@ function listingToFrontend(l: BackendListing): DriverMarketplaceListing {
     deliveryAddress: l.deliveryAddress,
     listedPrice: l.listedPrice,
     weight: l.weight,
-    distance: 0, // CE-03: Compute from coordinates
+    distance,
     priority: l.priority.toLowerCase() as DriverMarketplaceListing["priority"],
     postedAt: l.postedAt,
     bidsCount: l.bidsCount,
-    companyName: `Company #${l.companyId}`,
+    companyName: l.companyName ?? `Company #${l.companyId}`,
   };
 }
 

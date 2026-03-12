@@ -5,7 +5,7 @@
  * Returns count-based summaries to avoid N+1 queries on the frontend.
  */
 
-const { Order, Driver, Bid, Assignment, User } = require('../models');
+const { Order, Driver, Bid, Assignment, Company } = require('../models');
 const { success } = require('../utils/response');
 const { ORDER_STATUS, BID_STATUS } = require('../utils/constants');
 const { Op } = require('sequelize');
@@ -56,14 +56,12 @@ const getStats = async (req, res, next) => {
 
 /**
  * GET /api/dashboard/user
- * Returns the current user's profile info.
- * CE-02: Will use JWT-extracted user ID.
+ * Returns the current company profile info for dispatcher dashboards.
  */
 const getUser = async (req, res, next) => {
   try {
-    const userId = req.headers['x-user-id'] ? parseInt(req.headers['x-user-id'], 10) : null;
-
-    if (!userId) {
+    const companyId = req.headers['x-company-id'] ? parseInt(req.headers['x-company-id'], 10) : null;
+    if (!companyId) {
       return success(res, {
         name: 'Guest',
         email: '',
@@ -73,9 +71,8 @@ const getUser = async (req, res, next) => {
       });
     }
 
-    const user = await User.findByPk(userId);
-
-    if (!user) {
+    const company = await Company.findByPk(companyId);
+    if (!company) {
       return success(res, {
         name: 'Unknown',
         email: '',
@@ -85,23 +82,22 @@ const getUser = async (req, res, next) => {
       });
     }
 
-    // Count recent unassigned orders as "new deliveries"
-    const newDeliveries = req.tenantId
-      ? await Order.count({ where: { company_id: req.tenantId, status: ORDER_STATUS.UNASSIGNED } })
-      : 0;
+    const newDeliveries = await Order.count({
+      where: { company_id: companyId, status: ORDER_STATUS.UNASSIGNED },
+    });
 
-    const nameParts = user.name.split(' ');
-    const initials = nameParts
+    const initials = company.name
+      .split(' ')
       .map((p) => p[0])
       .join('')
       .substring(0, 2)
       .toUpperCase();
 
     return success(res, {
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      location: '', // CE-02: Add location to user model
+      name: company.name,
+      email: company.email || '',
+      phone: company.phone,
+      location: company.location || '',
       initials,
       newDeliveries,
     });
@@ -142,7 +138,10 @@ const getMarketplaceListings = async (req, res, next) => {
       order: orderClause,
       limit: parseInt(limit, 10),
       offset,
-      include: [{ model: require('../models').Bid, as: 'bids', attributes: ['id'] }],
+      include: [
+        { model: require('../models').Bid, as: 'bids', attributes: ['id'] },
+        { model: require('../models').Company, as: 'company', attributes: ['id', 'name'] },
+      ],
     });
 
     // Transform to include bids count
@@ -150,13 +149,18 @@ const getMarketplaceListings = async (req, res, next) => {
       id: order.id,
       trackingCode: order.tracking_code,
       pickupAddress: order.pickup_address,
+      pickupLat: order.pickup_lat ? parseFloat(order.pickup_lat) : null,
+      pickupLng: order.pickup_lng ? parseFloat(order.pickup_lng) : null,
       deliveryAddress: order.delivery_address,
+      deliveryLat: order.delivery_lat ? parseFloat(order.delivery_lat) : null,
+      deliveryLng: order.delivery_lng ? parseFloat(order.delivery_lng) : null,
       listedPrice: parseFloat(order.listed_price),
       weight: parseFloat(order.weight_kg),
       priority: order.priority,
       postedAt: order.created_at,
       bidsCount: order.bids ? order.bids.length : 0,
       companyId: order.company_id,
+      companyName: order.company ? order.company.name : null,
     }));
 
     return success(res, listings, {

@@ -10,7 +10,6 @@ import { SuperAdminSidebar } from "@/components/dashboard/superadmin-sidebar";
 import { useTheme } from "@/hooks/useTheme";
 import {
   BarChart3,
-  Bell,
   AlertCircle,
   Package,
   Truck,
@@ -127,9 +126,6 @@ export default function SuperAdminAnalyticsPage() {
                 Platform-wide performance metrics and insights.
               </p>
             </div>
-            <button className="relative p-2.5 rounded-full hover:bg-secondary transition-colors">
-              <Bell className="h-5 w-5 text-gray-500" />
-            </button>
           </div>
         </header>
 

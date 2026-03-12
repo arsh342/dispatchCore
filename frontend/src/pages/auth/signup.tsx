@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, lazy } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAutoTheme } from "@/hooks/useAutoTheme";
+import { applyAuthSession, type AuthLoginResponse } from "@/lib/session";
 
 import {
   AtSignIcon,
@@ -15,6 +16,7 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   Loader2Icon,
+  ChevronDownIcon,
 } from "lucide-react";
 
 const Dithering = lazy(() =>
@@ -41,6 +43,7 @@ export function SignupPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [location, setLocation] = useState("");
   const [companySize, setCompanySize] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -90,6 +93,10 @@ export function SignupPage() {
       setError("Please enter your company name.");
       return;
     }
+    if (accountType === "company" && !location) {
+      setError("Please enter your company location.");
+      return;
+    }
 
     setSubmitting(true);
 
@@ -98,13 +105,16 @@ export function SignupPage() {
         import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
       if (accountType === "company") {
-        // Register company
         const res = await fetch(`${API_URL}/companies`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: companyName,
-            address: "",
+            email,
+            password,
+            location,
+            address: location,
+            phone,
             plan_type:
               companySize === "large"
                 ? "ENTERPRISE"
@@ -119,21 +129,38 @@ export function SignupPage() {
         if (!res.ok || !data.success) {
           throw new Error(data.error?.message || "Registration failed");
         }
-
-        // Store company ID for subsequent API calls
-        localStorage.setItem("dc_company_id", String(data.data.id));
-        localStorage.setItem("dc_company_name", companyName);
-        localStorage.setItem("dc_user_email", email);
-
-        navigate("/dashboard");
       } else {
-        // Driver registration — store locally for now (no driver creation endpoint yet)
-        localStorage.setItem("dc_driver_name", fullName);
-        localStorage.setItem("dc_user_email", email);
-        localStorage.setItem("dc_driver_id", ""); // placeholder — will be set on next login
+        const res = await fetch(`${API_URL}/drivers/signup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: fullName,
+            email,
+            phone,
+            password,
+          }),
+        });
 
-        navigate("/driver/dashboard");
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error?.message || "Registration failed");
+        }
       }
+
+      const loginRes = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const loginBody = await loginRes.json();
+      if (!loginRes.ok || !loginBody.success || !loginBody.data) {
+        throw new Error(loginBody.error?.message || "Signup succeeded but login failed");
+      }
+
+      const auth = loginBody.data as AuthLoginResponse;
+      applyAuthSession(auth);
+      navigate(auth.targetRoute);
     } catch (err: unknown) {
       setError(
         err instanceof Error
@@ -143,6 +170,16 @@ export function SignupPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleStepOneSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setStep(2);
+  };
+
+  const handleStepTwoSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void handleSubmit();
   };
 
   return (
@@ -237,7 +274,7 @@ export function SignupPage() {
 
             {/* ── STEP 1: Account type + basic info ── */}
             {step === 1 && (
-              <div className="space-y-5">
+              <form className="space-y-5" onSubmit={handleStepOneSubmit}>
                 {/* Account type selector */}
                 <div className="grid grid-cols-2 gap-3">
                   <button
@@ -343,8 +380,7 @@ export function SignupPage() {
 
                 {/* Continue button */}
                 <button
-                  type="button"
-                  onClick={() => setStep(2)}
+                  type="submit"
                   className="w-full flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   Continue
@@ -361,13 +397,13 @@ export function SignupPage() {
                     Log In
                   </Link>
                 </p>
-              </div>
+              </form>
             )}
 
             {/* ── STEP 2: Company fields + password + terms ── */}
             {step === 2 && (
               <div className="space-y-5">
-                <form className="space-y-3">
+                <form className="space-y-3" onSubmit={handleStepTwoSubmit}>
                   {/* Company-specific fields */}
                   {accountType === "company" && (
                     <>
@@ -392,16 +428,34 @@ export function SignupPage() {
                         <label className="text-sm font-medium">
                           Company Size
                         </label>
+                      <div className="relative">
                         <select
                           value={companySize}
                           onChange={(e) => setCompanySize(e.target.value)}
-                          className="w-full rounded-full border border-border bg-card px-6 py-[18px] text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors appearance-none"
+                          className="w-full rounded-full border border-border bg-card px-6 pe-12 py-[18px] text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors appearance-none cursor-pointer"
                         >
                           <option value="">Select fleet size</option>
                           <option value="small">1–10 drivers</option>
                           <option value="medium">11–50 drivers</option>
                           <option value="large">50+ drivers</option>
                         </select>
+                        <ChevronDownIcon className="pointer-events-none absolute right-5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium">Location</label>
+                        <div className="relative">
+                          <input
+                            placeholder="San Francisco, CA"
+                            type="text"
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                            className="w-full rounded-full border border-border bg-card px-6 py-[18px] ps-11 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+                          />
+                          <div className="text-muted-foreground pointer-events-none absolute inset-y-0 start-0 flex items-center ps-4">
+                            <BuildingIcon className="size-4" />
+                          </div>
+                        </div>
                       </div>
                     </>
                   )}
@@ -503,8 +557,7 @@ export function SignupPage() {
                       Back
                     </button>
                     <button
-                      type="button"
-                      onClick={handleSubmit}
+                      type="submit"
                       disabled={submitting}
                       className="flex-1 flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                     >

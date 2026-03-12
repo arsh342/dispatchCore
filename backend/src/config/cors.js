@@ -8,11 +8,21 @@
 const cors = require('cors');
 const env = require('./env');
 
+const allowedOrigins = env.frontendUrl
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const corsOptions = {
-  origin: env.frontendUrl,
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`Origin ${origin} not allowed by CORS`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-company-id', 'x-user-id', 'x-driver-id'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-company-id', 'x-driver-id'],
 };
 
 module.exports = cors(corsOptions);

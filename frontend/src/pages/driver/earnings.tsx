@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { DriverSidebar } from "@/components/dashboard/driver-sidebar";
 import { useTheme } from "@/hooks/useTheme";
 import {
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   ArrowRight,
   Download,
@@ -17,12 +17,14 @@ import { get } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { FullScreenCalendar } from "@/components/ui/fullscreen-calendar";
 import { isSameDay, format } from "date-fns";
+import { formatINR } from "@/lib/currency";
 
 /* ─── Types ─── */
 interface BackendAssignment {
   id: number;
   order_id: number;
   driver_id: number;
+  source?: string; // 'DIRECT' | 'BID'
   createdAt: string;
   order?: {
     id: number;
@@ -39,6 +41,11 @@ interface BackendAssignment {
     priority: string;
     notes: string | null;
     created_at: string;
+    bids?: Array<{
+      id: number;
+      offered_price: string;
+      status: string;
+    }>;
   };
 }
 
@@ -117,12 +124,16 @@ export default function DriverEarningsPage() {
       .filter((a) => a.order)
       .map((a): Transaction => {
         const order = a.order!;
-        // Use listed_price as the earning amount; default $15 flat rate if not set
-        const amount = order.listed_price
-          ? parseFloat(order.listed_price)
-          : order.status === "DELIVERED"
-            ? 15
-            : 0;
+        // Prefer the accepted bid's offered_price (actual negotiated amount)
+        // over the order's listed_price (original asking price)
+        const acceptedBid = order.bids?.find(b => b.status === 'ACCEPTED');
+        const amount = acceptedBid
+          ? parseFloat(acceptedBid.offered_price)
+          : order.listed_price
+            ? parseFloat(order.listed_price)
+            : order.status === "DELIVERED"
+              ? 15
+              : 0;
         const dateObj = new Date(a.createdAt);
 
         return {
@@ -185,7 +196,7 @@ export default function DriverEarningsPage() {
       }
       grouped[dateStr].events.push({
         id: parseInt(txn.id.replace("TXN-", "")),
-        name: `${txn.trackingCode} — $${txn.amount.toFixed(2)}`,
+        name: `${txn.trackingCode} — ${formatINR(txn.amount)}`,
         time: txn.dateObj.toLocaleTimeString("en-US", {
           hour: "numeric",
           minute: "2-digit",
@@ -241,7 +252,7 @@ export default function DriverEarningsPage() {
     }
     for (const [key, val] of Object.entries(dayAmounts)) {
       map[key] = {
-        label: `$${val.total.toFixed(2)}`,
+        label: formatINR(val.total),
         sub: `${val.count} ${val.count === 1 ? "delivery" : "deliveries"}`,
         color: "text-green-600",
       };
@@ -332,7 +343,7 @@ export default function DriverEarningsPage() {
                   </div>
                   <div className="px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-900/20">
                     <span className="text-sm font-bold text-green-600 mr-1">
-                      ${selectedDayInfo.total.toFixed(2)}
+                      {formatINR(selectedDayInfo.total)}
                     </span>
                     <span className="text-[10px] uppercase text-muted-foreground font-medium">
                       Earned
@@ -354,7 +365,7 @@ export default function DriverEarningsPage() {
                 <div className="flex items-center justify-center py-8">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <IndianRupee className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div className="text-left">
                       <p className="text-sm font-medium text-muted-foreground">
@@ -390,7 +401,7 @@ export default function DriverEarningsPage() {
                         </div>
                       </div>
                       <p className="text-sm font-bold text-green-600 shrink-0">
-                        +${txn.amount.toFixed(2)}
+                        +{formatINR(txn.amount)}
                       </p>
                     </motion.div>
                   ))}
@@ -469,7 +480,7 @@ export default function DriverEarningsPage() {
                       <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-900/20">
                         <TrendingUp className="h-3.5 w-3.5 text-green-600" />
                         <span className="text-sm font-bold text-green-600">
-                          ${calMonthEarnings.toFixed(2)}
+                          {formatINR(calMonthEarnings)}
                         </span>
                         <span className="text-xs text-muted-foreground">
                           total
@@ -525,7 +536,7 @@ export default function DriverEarningsPage() {
                       <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-900/20">
                         <TrendingUp className="h-3.5 w-3.5 text-green-600" />
                         <span className="text-xs font-bold text-green-600">
-                          ${weekTotalEarnings.toFixed(2)}
+                          {formatINR(weekTotalEarnings)}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -586,7 +597,7 @@ export default function DriverEarningsPage() {
                           <div className="px-2.5 pt-1 pb-2 flex-1">
                             {day.earnings > 0 && (
                               <p className="text-[11px] font-bold text-green-600">
-                                ${day.earnings.toFixed(2)}
+                                {formatINR(day.earnings)}
                               </p>
                             )}
                           </div>
@@ -627,7 +638,7 @@ export default function DriverEarningsPage() {
                         <div
                           className={`h-9 w-9 rounded-full flex items-center justify-center ${tc.color.split(" ").slice(1).join(" ")}`}
                         >
-                          <DollarSign
+                          <IndianRupee
                             className={`h-4 w-4 ${tc.color.split(" ")[0]}`}
                           />
                         </div>
@@ -662,7 +673,7 @@ export default function DriverEarningsPage() {
                             className={`text-sm font-bold ${txn.status === "DELIVERED" ? "text-green-600" : "text-muted-foreground"}`}
                           >
                             {txn.status === "DELIVERED"
-                              ? `+$${txn.amount.toFixed(2)}`
+                              ? `+${formatINR(txn.amount)}`
                               : "Pending"}
                           </p>
                           <p className="text-[10px] text-muted-foreground">

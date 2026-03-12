@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, lazy } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAutoTheme } from "@/hooks/useAutoTheme";
+import { applyAuthSession, type AuthLoginResponse } from "@/lib/session";
 
 import {
   AtSignIcon,
@@ -21,9 +22,6 @@ export function AuthPage() {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [activeRole, setActiveRole] = useState<
-    "dispatcher" | "driver" | "superadmin"
-  >("dispatcher");
   const [isDark, setIsDark] = useState(
     document.documentElement.classList.contains("dark"),
   );
@@ -55,140 +53,34 @@ export function AuthPage() {
     setLoading(true);
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
-    // Clear previous session identity to avoid stale cross-role data
-    localStorage.removeItem("dc_company_id");
-    localStorage.removeItem("dc_user_id");
-    localStorage.removeItem("dc_driver_id");
-    localStorage.removeItem("dc_company_name");
-    localStorage.removeItem("dc_user_name");
-    localStorage.removeItem("dc_driver_name");
-    localStorage.removeItem("dc_user_role");
-    localStorage.removeItem("dc_user_email");
-
-    // Store credentials (CE-02: replace with JWT auth)
-    localStorage.setItem("dc_user_email", email);
-    localStorage.setItem("dc_user_role", activeRole);
-
-    let targetRoute = "/dashboard";
-
     try {
-      // Look up user by email
-      const res = await fetch(
-        `${API_URL}/users?email=${encodeURIComponent(email)}`,
-      );
-      const data = await res.json();
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const body = await res.json();
 
-      if (!data.success || !data.data) {
-        setError("User not found. Check your email or sign up.");
+      if (!res.ok || !body.success || !body.data) {
+        setError(body.error?.message || "Incorrect email or password.");
         setLoading(false);
         return;
       }
 
-      const user = data.data;
-      localStorage.setItem("dc_user_id", String(user.id));
-      localStorage.setItem("dc_user_name", user.name);
-
-      if (activeRole === "dispatcher") {
-        // ── Dispatcher login (company-level admin) ──
-        // The user must belong to a company
-        if (!user.company_id) {
-          setError("This account is not associated with a company.");
-          setLoading(false);
-          return;
-        }
-        localStorage.setItem("dc_company_id", String(user.company_id));
-
-        // Fetch company name
-        try {
-          const compRes = await fetch(`${API_URL}/companies`, {
-            headers: { "x-company-id": String(user.company_id) },
-          });
-          const compData = await compRes.json();
-          if (compData.success && compData.data?.length) {
-            const company =
-              compData.data.find(
-                (c: { id: number }) => c.id === user.company_id,
-              ) || compData.data[0];
-            localStorage.setItem("dc_company_name", company.name);
-          }
-        } catch {
-          /* ignore */
-        }
-
-        targetRoute = "/dashboard";
-      } else if (activeRole === "driver") {
-        // ── Driver login ──
-        if (user.driverProfile) {
-          localStorage.setItem("dc_driver_id", String(user.driverProfile.id));
-          localStorage.setItem("dc_driver_name", user.name);
-
-          if (user.company_id && user.driverProfile.type === "EMPLOYED") {
-            // Employed driver — belongs to a company
-            localStorage.setItem("dc_company_id", String(user.company_id));
-            targetRoute = "/employed-driver/dashboard";
-
-            // Fetch company name
-            try {
-              const compRes = await fetch(`${API_URL}/companies`, {
-                headers: { "x-company-id": String(user.company_id) },
-              });
-              const compData = await compRes.json();
-              if (compData.success && compData.data?.length) {
-                const company =
-                  compData.data.find(
-                    (c: { id: number }) => c.id === user.company_id,
-                  ) || compData.data[0];
-                localStorage.setItem("dc_company_name", company.name);
-              }
-            } catch {
-              /* ignore */
-            }
-
-            // Set driver status to AVAILABLE
-            try {
-              await fetch(
-                `${API_URL}/drivers/${user.driverProfile.id}/status`,
-                {
-                  method: "PATCH",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "x-company-id": String(user.company_id),
-                  },
-                  body: JSON.stringify({ status: "AVAILABLE" }),
-                },
-              );
-            } catch {
-              /* ignore */
-            }
-          } else {
-            // Independent driver — no company
-            targetRoute = "/driver/dashboard";
-          }
-        } else {
-          setError("No driver profile found for this account.");
-          setLoading(false);
-          return;
-        }
-      } else if (activeRole === "superadmin") {
-        // ── SuperAdmin login ──
-        // Only the hardcoded platform admin email is allowed
-        if (user.role !== "superadmin") {
-          setError("This account does not have SuperAdmin privileges.");
-          setLoading(false);
-          return;
-        }
-        targetRoute = "/superadmin";
-      }
+      const auth = body.data as AuthLoginResponse;
+      applyAuthSession(auth);
+      navigate(auth.targetRoute);
     } catch {
       setError("Could not connect to server. Is the backend running?");
       setLoading(false);
       return;
     }
+    setLoading(false);
+  };
 
-    setTimeout(() => {
-      setLoading(false);
-      navigate(targetRoute);
-    }, 300);
+  const handleLoginSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void handleLogin();
   };
 
   return (
@@ -265,7 +157,7 @@ export function AuthPage() {
             </div>
 
             {/* Form */}
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleLoginSubmit}>
               {/* Email */}
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Email</label>
@@ -337,8 +229,7 @@ export function AuthPage() {
 
               {/* Login button */}
               <button
-                type="button"
-                onClick={handleLogin}
+                type="submit"
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
@@ -352,8 +243,6 @@ export function AuthPage() {
                 )}
               </button>
             </form>
-
-
             {/* Sign up link */}
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{" "}
@@ -364,31 +253,6 @@ export function AuthPage() {
                 Sign Up
               </Link>
             </p>
-
-            {/* Role selector chips */}
-            <div className="pt-3 border-t border-border">
-              <p className="text-xs text-muted-foreground mb-2.5 text-center">
-                Signing in as:
-              </p>
-              <div className="flex gap-2 justify-center">
-                {(["dispatcher", "driver", "superadmin"] as const).map(
-                  (role) => (
-                    <button
-                      key={role}
-                      type="button"
-                      onClick={() => setActiveRole(role)}
-                      className={`px-5 py-2 rounded-full text-xs font-medium transition-all duration-200 border capitalize ${
-                        activeRole === role
-                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                          : "bg-transparent text-muted-foreground border-border hover:border-foreground/30 hover:bg-muted"
-                      }`}
-                    >
-                      {role}
-                    </button>
-                  ),
-                )}
-              </div>
-            </div>
           </div>
 
           {/* Footer */}
@@ -400,4 +264,3 @@ export function AuthPage() {
     </main>
   );
 }
-

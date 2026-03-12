@@ -11,20 +11,23 @@ import type {
   RecentBid,
   EarningsChart,
 } from "@/types/driver/dashboard";
-import { get } from "@/lib/api";
+import { get, patch } from "@/lib/api";
 import { calcDistance, estimateTime } from "@/lib/geo";
+import { formatINR } from "@/lib/currency";
 export type { ActiveDelivery } from "@/types/driver/dashboard";
 
 // ── Backend response shapes ──
 
 interface BackendDriver {
   id: number;
-  user_id: number;
   company_id: number | null;
   type: string;
   status: string;
   verification_status: string;
   license_number: string | null;
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
   user?: {
     id: number;
     name: string;
@@ -63,9 +66,16 @@ interface BackendAssignment {
     status: string;
     priority: string;
     notes: string | null;
-    customer_id: number | null;
     company_id: number;
+    recipient_name?: string | null;
+    recipient_phone?: string | null;
+    recipient_email?: string | null;
+    bids?: Array<{ id: number; offered_price: string; status: string }>;
   };
+  assignedByCompany?: {
+    id: number;
+    name: string;
+  } | null;
 }
 
 // ── API Functions ──
@@ -77,7 +87,7 @@ export async function fetchDriverUser(): Promise<DriverUser> {
     if (!driverId) throw new Error("No driver identity");
     const driver = await get<BackendDriver>(`/drivers/${driverId}`);
 
-    const name = driver.user?.name ?? "Driver";
+    const name = driver.name ?? driver.user?.name ?? "Driver";
     // Sync localStorage so sidebar picks up the correct name
     localStorage.setItem("dc_driver_name", name);
     localStorage.setItem("dc_user_name", name);
@@ -85,7 +95,7 @@ export async function fetchDriverUser(): Promise<DriverUser> {
     return {
       name,
       location: "—",
-      initials: (driver.user?.name ?? "D")
+      initials: (driver.name ?? driver.user?.name ?? "D")
         .split(" ")
         .map((p) => p[0])
         .join("")
@@ -110,11 +120,52 @@ export async function fetchDriverUser(): Promise<DriverUser> {
 /** Get driver aggregated stats */
 export async function fetchDriverStats(): Promise<DriverStats> {
   try {
-    const stats = await get<BackendDriverStats>("/dashboard/driver-stats");
+    const driverId = localStorage.getItem("dc_driver_id");
+    const [stats, history] = await Promise.all([
+      get<BackendDriverStats>("/dashboard/driver-stats"),
+      driverId ? get<BackendAssignment[]>("/history") : Promise.resolve([]),
+    ]);
+
+    // Compute earnings from delivered orders
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    let todayEarnings = 0;
+    let weekEarnings = 0;
+
+    const deliveredAssignments = history.filter(
+      (a) =>
+        String(a.driver_id) === driverId &&
+        a.order?.status === "DELIVERED",
+    );
+
+    for (const a of deliveredAssignments) {
+      const acceptedBid = a.order?.bids?.find((b) => b.status === "ACCEPTED");
+      const amount = acceptedBid
+        ? parseFloat(acceptedBid.offered_price)
+        : a.order?.listed_price
+          ? parseFloat(a.order.listed_price)
+          : 0;
+
+      // Use the order's updated_at as approximate delivery time
+      const updatedAt = (a as any).updated_at ?? (a as any).updatedAt;
+      const deliveredDate = updatedAt ? new Date(updatedAt) : null;
+
+      if (deliveredDate && deliveredDate >= startOfDay) {
+        todayEarnings += amount;
+      }
+      if (deliveredDate && deliveredDate >= startOfWeek) {
+        weekEarnings += amount;
+      }
+    }
 
     return {
-      todayEarnings: 0, // CE-03: Compute from completed deliveries today
-      weekEarnings: 0,
+      todayEarnings,
+      weekEarnings,
       activeDeliveries: stats.activeDeliveries,
       completedToday: stats.completedToday,
       completedTotal: stats.completedTotal,
@@ -149,7 +200,7 @@ export async function fetchActiveDeliveries(): Promise<ActiveDelivery[]> {
         const status = a.order?.status;
         return (
           String(a.driver_id) === driverId &&
-          (status === "ASSIGNED" ||
+           (status === "ASSIGNED" ||
             status === "PICKED_UP" ||
             status === "EN_ROUTE")
         );
@@ -160,11 +211,14 @@ export async function fetchActiveDeliveries(): Promise<ActiveDelivery[]> {
           trackingCode: a.order?.tracking_code ?? "—",
           pickupAddress: a.order?.pickup_address ?? "—",
           deliveryAddress: a.order?.delivery_address ?? "—",
-          customerName: `Customer #${a.order?.customer_id ?? "—"}`,
+          customerName: a.order?.recipient_name ?? "Recipient",
           status: (a.order?.status ?? "ASSIGNED") as ActiveDelivery["status"],
-          payment: a.order?.listed_price
-            ? `$${parseFloat(a.order.listed_price).toFixed(2)}`
-            : "—",
+          payment: (() => {
+            const acceptedBid = a.order?.bids?.find(b => b.status === 'ACCEPTED');
+            if (acceptedBid) return formatINR(parseFloat(acceptedBid.offered_price));
+            if (a.order?.listed_price) return formatINR(parseFloat(a.order.listed_price));
+            return "—";
+          })(),
           distance: calcDistance(
             a.order?.pickup_lat,
             a.order?.pickup_lng,
@@ -186,7 +240,7 @@ export async function fetchActiveDeliveries(): Promise<ActiveDelivery[]> {
               : a.order?.status === "PICKED_UP"
                 ? 35
                 : 10,
-          dispatcherCompany: `Company #${a.order?.company_id ?? "—"}`,
+          dispatcherCompany: a.assignedByCompany?.name ?? "—",
         }),
       );
   } catch {
@@ -213,11 +267,14 @@ export async function fetchCompletedDeliveries(): Promise<ActiveDelivery[]> {
           trackingCode: a.order?.tracking_code ?? "—",
           pickupAddress: a.order?.pickup_address ?? "—",
           deliveryAddress: a.order?.delivery_address ?? "—",
-          customerName: `Customer #${a.order?.customer_id ?? "—"}`,
+          customerName: a.order?.recipient_name ?? "Recipient",
           status: "DELIVERED",
-          payment: a.order?.listed_price
-            ? `$${parseFloat(a.order.listed_price).toFixed(2)}`
-            : "—",
+          payment: (() => {
+            const acceptedBid = a.order?.bids?.find(b => b.status === 'ACCEPTED');
+            if (acceptedBid) return formatINR(parseFloat(acceptedBid.offered_price));
+            if (a.order?.listed_price) return formatINR(parseFloat(a.order.listed_price));
+            return "—";
+          })(),
           distance: calcDistance(
             a.order?.pickup_lat,
             a.order?.pickup_lng,
@@ -234,7 +291,7 @@ export async function fetchCompletedDeliveries(): Promise<ActiveDelivery[]> {
             a.order?.delivery_lng,
           ),
           progress: 100,
-          dispatcherCompany: `Company #${a.order?.company_id ?? "—"}`,
+          dispatcherCompany: a.assignedByCompany?.name ?? "—",
         }),
       );
   } catch {
@@ -295,23 +352,51 @@ export async function fetchRecentBids(): Promise<RecentBid[]> {
 
 /** Get earnings chart data */
 export async function fetchEarningsChart(): Promise<EarningsChart[]> {
-  // CE-03: Compute from history + payment amounts
-  // For now return empty — will be computed when payment tracking is added
-  return [
-    { day: "Mon", amount: 0 },
-    { day: "Tue", amount: 0 },
-    { day: "Wed", amount: 0 },
-    { day: "Thu", amount: 0 },
-    { day: "Fri", amount: 0 },
-    { day: "Sat", amount: 0 },
-    { day: "Sun", amount: 0 },
-  ];
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const chart: EarningsChart[] = dayNames.map((day) => ({ day, amount: 0 }));
+
+  try {
+    const driverId = localStorage.getItem("dc_driver_id");
+    if (!driverId) return chart;
+
+    const history = await get<BackendAssignment[]>("/history");
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    for (const a of history) {
+      if (String(a.driver_id) !== driverId || a.order?.status !== "DELIVERED")
+        continue;
+
+      const acceptedBid = a.order.bids?.find((b) => b.status === "ACCEPTED");
+      const amount = acceptedBid
+        ? parseFloat(acceptedBid.offered_price)
+        : a.order.listed_price
+          ? parseFloat(a.order.listed_price)
+          : 0;
+
+      const updatedAt = (a as any).updated_at ?? (a as any).updatedAt;
+      const date = updatedAt ? new Date(updatedAt) : null;
+      if (date && date >= startOfWeek) {
+        chart[date.getDay()].amount += amount;
+      }
+    }
+
+    return chart;
+  } catch {
+    return chart;
+  }
 }
 
 /** Update driver online/offline status */
 export async function updateDriverStatus(
-  _status: DriverUser["status"],
+  status: DriverUser["status"],
 ): Promise<void> {
-  // CE-02: POST /api/drivers/:id/status
-  // For now this is a no-op until we add the backend endpoint
+  const driverId = localStorage.getItem("dc_driver_id");
+  if (!driverId) return;
+  const backendStatus = status === "online" ? "AVAILABLE" : "OFFLINE";
+  await patch<{ id: number; status: string }>(`/drivers/${driverId}/status`, {
+    status: backendStatus,
+  });
 }

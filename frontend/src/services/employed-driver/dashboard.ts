@@ -13,7 +13,6 @@ import { calcDistance, estimateTime } from "@/lib/geo";
 interface BackendOrder {
   id: number;
   company_id: number;
-  customer_id: number | null;
   tracking_code: string;
   status: string;
   listed_price: string | null;
@@ -26,18 +25,23 @@ interface BackendOrder {
   delivery_address: string | null;
   priority: string;
   notes: string | null;
+  recipient_name?: string | null;
+  recipient_phone?: string | null;
+  recipient_email?: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
 interface BackendDriver {
   id: number;
-  user_id: number;
   company_id: number | null;
   type: string;
   status: string;
   verification_status: string;
   license_number: string | null;
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
   user?: { id: number; name: string; email: string; phone: string };
 }
 
@@ -124,7 +128,7 @@ export async function fetchEmployedDriverUser(): Promise<EmployedDriverUser> {
     if (!driverId) throw new Error("No driver identity");
     const driver = await get<BackendDriver>(`/drivers/${driverId}`);
 
-    const name = driver.user?.name ?? "Driver";
+    const name = driver.name ?? driver.user?.name ?? "Driver";
     const initials = name
       .split(" ")
       .map((p) => p[0])
@@ -207,7 +211,7 @@ export async function fetchAssignedOrders(
         priority: o.priority,
         weight: o.weight_kg ? `${parseFloat(o.weight_kg)} kg` : "—",
         notes: o.notes ?? "",
-        customerName: `Customer #${o.customer_id ?? "—"}`,
+        customerName: o.recipient_name ?? "Recipient",
         createdAt: new Date(o.createdAt).toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
@@ -237,8 +241,8 @@ export async function fetchActiveDeliveries(): Promise<ActiveDelivery[]> {
           trackingCode: o.tracking_code,
           pickupAddress: o.pickup_address ?? "—",
           deliveryAddress: o.delivery_address ?? "—",
-          customerName: `Customer #${o.customer_id ?? "—"}`,
-          customerPhone: "—", // CE-03: From customer user record
+          customerName: o.recipient_name ?? "Recipient",
+          customerPhone: o.recipient_phone ?? "—",
           status: o.status,
           weight: o.weight_kg ? `${parseFloat(o.weight_kg)} kg` : "—",
           distance: calcDistance(
@@ -287,8 +291,8 @@ export async function fetchEmployedDriverProfile(): Promise<EmployedDriverProfil
 
     return {
       name: driver.user?.name ?? "—",
-      email: driver.user?.email ?? "—",
-      phone: driver.user?.phone ?? "—",
+      email: driver.email ?? driver.user?.email ?? "—",
+      phone: driver.phone ?? driver.user?.phone ?? "—",
       companyName,
       companyAddress,
       employeeId: `EMP-${String(driver.id).padStart(4, "0")}`,

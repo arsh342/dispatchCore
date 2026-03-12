@@ -4,17 +4,19 @@ import { useTheme } from "@/hooks/useTheme";
 import MapView from "@/components/map/MapView";
 import type { MapMarker, MapRoute } from "@/components/map/MapView";
 import { get } from "@/lib/api";
+import { formatINR } from "@/lib/currency";
 import { Truck, Navigation, Layers, MapPin, Package } from "lucide-react";
 
 /* ─── Types ─── */
 interface Driver {
   id: number;
-  user_id: number;
   company_id: number | null;
   type: string;
   status: string;
   license_number: string | null;
-  User?: { name: string; email: string };
+  name?: string | null;
+  email?: string | null;
+  user?: { name: string; email: string };
 }
 
 interface DriverLocation {
@@ -386,7 +388,8 @@ export default function MapOverviewPage() {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-foreground">
-                    {selectedDriver.User?.name ??
+                    {selectedDriver.name ??
+                      selectedDriver.user?.name ??
                       `Driver #${selectedDriver.id}`}
                   </p>
                   <p className="text-xs text-muted-foreground capitalize">
@@ -528,7 +531,7 @@ export default function MapOverviewPage() {
                     Price
                   </p>
                   <p className="text-sm font-bold text-green-600">
-                    ${parseFloat(selectedOrder.listed_price).toFixed(2)}
+                    {formatINR(parseFloat(selectedOrder.listed_price))}
                   </p>
                 </div>
               )}
@@ -632,7 +635,7 @@ export default function MapOverviewPage() {
                       />
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-medium text-foreground truncate">
-                          {d.User?.name ?? `Driver #${d.id}`}
+                          {d.name ?? d.user?.name ?? `Driver #${d.id}`}
                         </p>
                         <p className="text-[10px] text-muted-foreground capitalize">
                           {d.type.toLowerCase()} · {d.status.toLowerCase()}

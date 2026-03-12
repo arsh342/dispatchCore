@@ -104,7 +104,6 @@ module.exports = (err, req, res, next) => {
   const code = err.code || 'INTERNAL_ERROR';
   const message = err.message || 'Something went wrong';
 
-  // Log full error in development, sanitized in production
   if (process.env.NODE_ENV === 'development') {
     console.error(err.stack);
   }
@@ -144,8 +143,18 @@ class NotFoundError extends AppError {
 
 ## 4. Input Validation
 
-All request bodies are validated before reaching the service layer:
+All request bodies are validated before reaching the service layer. Six validator files cover all endpoints:
 
+| Validator | Endpoints Covered |
+|---|---|
+| `authValidator.js` | Login |
+| `orderValidator.js` | Create order, list order, assign order, get order |
+| `bidValidator.js` | Place bid |
+| `driverValidator.js` | Create driver, signup, verify, update, password, vehicle, register route, find nearby |
+| `locationValidator.js` | GPS ping, public tracking |
+| `superadminValidator.js` | Update settings |
+
+### Example Validator
 ```javascript
 // validators/orderValidator.js
 const { body, param } = require('express-validator');
@@ -157,11 +166,6 @@ exports.createOrder = [
   body('delivery_lng').isFloat({ min: -180, max: 180 }),
   body('priority').isIn(['LOW', 'NORMAL', 'HIGH', 'URGENT']),
   body('weight_kg').optional().isFloat({ min: 0 }),
-];
-
-exports.listOrder = [
-  param('id').isInt(),
-  body('listed_price').isFloat({ min: 0.01 }),
 ];
 ```
 
@@ -212,8 +216,6 @@ const logger = winston.createLogger({
     })
   ]
 });
-
-module.exports = logger;
 ```
 
 ### Log Levels
@@ -221,7 +223,7 @@ module.exports = logger;
 |---|---|
 | `error` | Failed transactions, DB connection loss, unhandled exceptions |
 | `warn` | Lock timeouts, bid on already-assigned order, rate limit hit |
-| `info` | Assignment created, bid accepted, driver went online |
+| `info` | Assignment created, bid accepted, driver went online, WebSocket connect/disconnect |
 | `debug` | GPS ping received, WebSocket room join, query execution time |
 
 ---
@@ -238,18 +240,13 @@ npx sequelize-cli db:migrate:undo  # rollback
 
 ### Connection Pool Configuration
 ```javascript
-// config/database.js
-module.exports = {
-  dialect: 'mysql',
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  pool: {
-    min: 2,
-    max: 10,
-    acquire: 30000,  // ms to wait for connection
-    idle: 10000      // ms before releasing idle connection
-  }
-};
+// config/database.js (via models/index.js)
+pool: {
+  min: 2,
+  max: 10,
+  acquire: 30000,  // ms to wait for connection
+  idle: 10000      // ms before releasing idle connection
+}
 ```
 
 ### Naming Conventions
@@ -259,6 +256,7 @@ module.exports = {
 | Column names | snake_case | `company_id`, `created_at` |
 | Foreign keys | `{referenced_table_singular}_id` | `driver_id`, `order_id` |
 | Indexes | `idx_{table}_{columns}` | `idx_orders_company_status` |
+| Model global settings | `timestamps: true, underscored: true` | Auto `created_at`, `updated_at` |
 
 ---
 
@@ -266,28 +264,24 @@ module.exports = {
 
 ```javascript
 // config/cors.js
-const cors = require('cors');
-
 const corsOptions = {
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-company-id', 'x-driver-id', 'x-user-role'],
 };
-
-module.exports = cors(corsOptions);
 ```
+
+### Security Headers
+Helmet.js is applied globally for XSS, clickjacking, and MIME-sniff protection.
 
 ### Rate Limiting
 ```javascript
 // middlewares/rateLimiter.js
-const rateLimit = require('express-rate-limit');
-
 // Standard API: 100 requests per 15 minutes
 exports.apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests' } }
 });
 
 // GPS pings: 20 per minute (1 every 3 seconds)
@@ -299,53 +293,88 @@ exports.locationLimiter = rateLimit({
 
 ---
 
-## 8. Health Check & Graceful Shutdown
+## 8. Tenant Resolution
+
+All company-scoped endpoints pass through `tenantResolver` middleware:
+
+```javascript
+// middlewares/tenantResolver.js
+// Extracts company_id from x-company-id header
+// Sets req.tenantId for downstream use
+// All Order/Assignment/Company queries filter by req.tenantId
+```
+
+### Identity Headers (CE-01)
+Current authentication is header-based (CE-02 will add JWT):
+
+| Header | Purpose | Set By |
+|---|---|---|
+| `x-company-id` | Company tenant scope | Frontend (from localStorage) |
+| `x-driver-id` | Driver identity | Frontend (from localStorage) |
+| `x-user-role` | User role | Frontend (from localStorage) |
+
+---
+
+## 9. Frontend API Client
+
+### HTTP Client
+```typescript
+// lib/api.ts
+// Wraps fetch() with automatic:
+// - Base URL injection (VITE_API_URL)
+// - JSON content-type headers
+// - Identity headers (x-company-id, x-driver-id, x-user-role)
+// - Response unwrapping (extracts data from { success, data, meta } envelope)
+// - Error handling
+```
+
+### Data Fetching Pattern
+Services are role-scoped with TypeScript interfaces:
+```typescript
+// services/driver/dashboard.ts
+export async function fetchDriverStats(): Promise<DriverStats> { ... }
+export async function fetchActiveDeliveries(): Promise<ActiveDelivery[]> { ... }
+export async function fetchCompletedDeliveries(): Promise<ActiveDelivery[]> { ... }
+export async function fetchEarningsChart(): Promise<EarningsChart[]> { ... }
+```
+
+Custom hooks compose services into reactive state:
+```typescript
+// hooks/driver/useDashboard.ts
+export function useDriverStats() { ... }
+export function useActiveDeliveries() { ... }
+export function useCompletedDeliveries() { ... }
+```
+
+### Dashboard Auto-Refresh
+Driver dashboards poll for data updates every 30 seconds to stay in sync with dispatcher-side changes:
+```typescript
+useEffect(() => {
+  // Initial load
+  load();
+  // Auto-refresh every 30s
+  const interval = setInterval(() => refresh(), 30_000);
+  return () => clearInterval(interval);
+}, []);
+```
+
+---
+
+## 10. Health Check & Graceful Shutdown
 
 ### Health Endpoint
-```javascript
-// routes/health.js
-router.get('/api/health', async (req, res) => {
-  try {
-    await sequelize.authenticate();
-    return res.json({
-      success: true,
-      data: {
-        status: 'healthy',
-        uptime: process.uptime(),
-        database: 'connected',
-        timestamp: new Date().toISOString()
-      }
-    });
-  } catch (err) {
-    return res.status(503).json({
-      success: true,
-      data: { status: 'unhealthy', database: 'disconnected' }
-    });
-  }
-});
+```
+GET /api/health → { status: 'healthy', uptime, database: 'connected', timestamp }
 ```
 
 ### Graceful Shutdown
 ```javascript
 // server.js
 const shutdown = async (signal) => {
-  logger.info(`${signal} received. Shutting down gracefully...`);
-  
-  // Stop accepting new connections
-  server.close(() => {
-    logger.info('HTTP server closed');
-  });
-
-  // Close WebSocket connections
-  io.close(() => {
-    logger.info('WebSocket server closed');
-  });
-
-  // Close database pool
-  await sequelize.close();
-  logger.info('Database connections closed');
-
-  process.exit(0);
+  // 1. Stop accepting new HTTP connections
+  // 2. Close WebSocket connections
+  // 3. Close database pool
+  // 4. Exit
 };
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
@@ -354,24 +383,21 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 
 ---
 
-## 9. WebSocket Safety
+## 11. WebSocket Safety
 
-### Connection Handshake
-```javascript
-// sockets/dispatchSocket.js
-io.use((socket, next) => {
-  const { userId, role, companyId } = socket.handshake.auth;
-  
-  if (!userId || !role) {
-    return next(new Error('Authentication required'));
-  }
-  
-  socket.userId = userId;
-  socket.role = role;
-  socket.companyId = companyId;
-  next();
-});
-```
+### Room Management
+Single socket handler file (`sockets/index.js`) manages all room joins:
+
+| Event | Room Created |
+|---|---|
+| `join:company` | `company:{id}:dispatchers` |
+| `join:marketplace` | `company:{id}:marketplace` |
+| `join:driver` | `driver:{id}` |
+| `join:tracking` | `order:{id}:tracking` |
+| `join:messages` | `order:{id}:chat:{channel}` |
+
+### GPS via WebSocket
+High-frequency GPS pings are sent directly over WebSocket (`location:ping` event) as an alternative to the REST endpoint, reducing HTTP overhead.
 
 ### Reconnection & Heartbeat
 - Client auto-reconnects with exponential backoff
@@ -380,7 +406,31 @@ io.use((socket, next) => {
 
 ---
 
-## 10. Git Workflow
+## 12. Frontend Conventions
+
+### Styling
+- **Tailwind CSS v4** — utility-first CSS
+- **CSS Custom Properties** — theme tokens (light/dark mode via `useTheme` hook)
+- **No inline styles** — all styling through Tailwind classes
+
+### Animations
+- **Framer Motion** — page transitions via `<PageTransition>` wrapper
+- **AnimatePresence** — exit animations on route changes
+- **CSS transitions** — hover effects, micro-interactions
+
+### Currency & Formatting
+- All monetary values displayed in Indian Rupees (₹) via `formatINR()` in `lib/currency.ts`
+- Distances calculated via Haversine formula in `lib/geo.ts`
+
+### Component Patterns
+- Sidebars are role-specific: `sidebar.tsx`, `driver-sidebar.tsx`, `employed-driver-sidebar.tsx`, `superadmin-sidebar.tsx`
+- Pages are self-contained with their own data fetching via `useEffect`
+- Loading states use `<LoadingPackage />` animated component
+- Empty states use `<EmptyState />` component with icons
+
+---
+
+## 13. Git Workflow
 
 ### Branch Strategy
 ```

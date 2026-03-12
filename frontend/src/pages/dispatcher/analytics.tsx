@@ -9,7 +9,7 @@ import {
   Truck,
   CheckCircle2,
   Clock,
-  DollarSign,
+  IndianRupee,
   Users,
   ArrowUpRight,
   ArrowDownRight,
@@ -17,6 +17,7 @@ import {
 import LoadingPackage from "@/components/ui/loading-package";
 import { motion } from "framer-motion";
 import { format, subDays, startOfDay, isSameDay } from "date-fns";
+import { formatINR } from "@/lib/currency";
 
 /* ─── Types ─── */
 interface BackendOrder {
@@ -440,8 +441,8 @@ export default function DispatcherAnalyticsPage() {
                 },
                 {
                   label: "Revenue",
-                  value: `$${periodRevenue.toFixed(2)}`,
-                  icon: DollarSign,
+                  value: formatINR(periodRevenue),
+                  icon: IndianRupee,
                   change: revenueChange,
                 },
                 {
@@ -570,7 +571,7 @@ export default function DispatcherAnalyticsPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-green-600">
-                      ${periodRevenue.toFixed(2)}
+                      {formatINR(periodRevenue)}
                     </p>
                     <p className="text-[10px] text-muted-foreground uppercase">Total</p>
                   </div>
@@ -662,7 +663,7 @@ export default function DispatcherAnalyticsPage() {
                                   {driver.deliveries} deliveries
                                 </span>
                                 <span className="text-green-600 font-bold">
-                                  ${driver.revenue.toFixed(2)}
+                                  {formatINR(driver.revenue)}
                                 </span>
                               </div>
                             </div>
@@ -699,15 +700,15 @@ export default function DispatcherAnalyticsPage() {
                     },
                     {
                       label: "Avg. Revenue / Day",
-                      value: `$${(periodRevenue / rangeDays).toFixed(2)}`,
-                      icon: DollarSign,
+                      value: formatINR(periodRevenue / rangeDays),
+                      icon: IndianRupee,
                     },
                     {
                       label: "Avg. Order Value",
                       value:
                         periodDeliveries > 0
-                          ? `$${(periodRevenue / periodDeliveries).toFixed(2)}`
-                          : "$0",
+                          ? formatINR(periodRevenue / periodDeliveries)
+                          : formatINR(0),
                       icon: TrendingUp,
                     },
                     {

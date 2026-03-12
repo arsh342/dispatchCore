@@ -12,8 +12,6 @@ import {
   BarChart3,
   Settings,
   ChevronsRight,
-  Moon,
-  Sun,
   Shield,
   LogOut,
 } from "lucide-react";
@@ -32,7 +30,10 @@ const navItems = [
   { icon: Settings, label: "Settings", href: "/superadmin/settings" },
 ];
 
-export function SuperAdminSidebar({ isDark, setIsDark }: SidebarProps) {
+export function SuperAdminSidebar({
+  isDark: _isDark,
+  setIsDark: _setIsDark,
+}: SidebarProps) {
   const [open, setOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
@@ -111,32 +112,6 @@ export function SuperAdminSidebar({ isDark, setIsDark }: SidebarProps) {
             <span className="text-sm font-medium">Sign out</span>
           )}
         </button>
-        <div
-          className={`flex items-center ${open ? "gap-1 bg-secondary rounded-full p-1" : "flex-col gap-1"}`}
-        >
-          <button
-            onClick={() => setIsDark(false)}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-medium transition-colors ${
-              !isDark
-                ? "bg-white dark:bg-gray-700 shadow-sm text-foreground"
-                : "text-muted-foreground"
-            }`}
-          >
-            <Sun className="h-3.5 w-3.5" />
-            {open && "Light"}
-          </button>
-          <button
-            onClick={() => setIsDark(true)}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-medium transition-colors ${
-              isDark
-                ? "bg-white dark:bg-accent shadow-sm text-foreground"
-                : "text-muted-foreground"
-            }`}
-          >
-            <Moon className="h-3.5 w-3.5" />
-            {open && "Dark"}
-          </button>
-        </div>
       </div>
 
       {/* Collapse */}

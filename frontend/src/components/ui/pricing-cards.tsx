@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 const plans = [
   {
     name: "Starter",
-    price: "$29",
+    price: "₹29",
     description:
       "For small courier companies getting started with real-time dispatch.",
     features: [
@@ -41,7 +41,7 @@ const plans = [
   },
   {
     name: "Growth",
-    price: "$79",
+    price: "₹79",
     description:
       "For growing businesses that need the gig marketplace and route matching.",
     features: [

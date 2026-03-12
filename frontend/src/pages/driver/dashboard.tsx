@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DriverSidebar } from "@/components/dashboard/driver-sidebar";
 import { useGeolocationPing } from "@/hooks/useGeolocationPing";
@@ -11,10 +11,10 @@ import {
   useRecentBids,
   useEarningsChart,
 } from "@/hooks/driver/useDashboard";
+import { updateDriverStatus } from "@/services/driver/dashboard";
 import {
-  Bell,
   Search,
-  DollarSign,
+  IndianRupee,
   Truck,
   CheckCircle2,
   Star,
@@ -31,6 +31,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import LoadingPackage from "@/components/ui/loading-package";
+import { formatINR } from "@/lib/currency";
 
 /* ─── Status styling ─── */
 const deliveryStatusConfig: Record<string, { label: string; color: string }> = {
@@ -81,14 +82,14 @@ export default function DriverDashboardPage() {
   const [deliveryTab, setDeliveryTab] = useState<"active" | "completed">(
     "active",
   );
-  const { data: user } = useDriverUser();
+  const { data: user, loading: userLoading } = useDriverUser();
   const { data: stats, loading: statsLoading } = useDriverStats();
   const { data: deliveries, loading: deliveriesLoading } =
     useActiveDeliveries();
   const { data: completedDeliveries, loading: completedLoading } =
     useCompletedDeliveries();
   const { data: bids, loading: bidsLoading } = useRecentBids();
-  const { data: earnings } = useEarningsChart();
+  const { data: earnings, loading: chartLoading } = useEarningsChart();
 
   // Track driver location
   useGeolocationPing();
@@ -96,6 +97,33 @@ export default function DriverDashboardPage() {
   const maxEarning = earnings
     ? Math.max(...earnings.map((e) => e.amount))
     : 100;
+
+  // Status Toggle
+  const [localStatus, setLocalStatus] = useState(user?.status || "offline");
+
+  useEffect(() => {
+    if (user?.status) setLocalStatus(user.status);
+  }, [user?.status]);
+
+  const toggleStatus = async () => {
+    const newStatus = localStatus === "online" ? "offline" : "online";
+    setLocalStatus(newStatus); // Optimistic UI update
+    try {
+      await updateDriverStatus(newStatus);
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      // Revert on failure
+      setLocalStatus(localStatus);
+    }
+  };
+
+  if (statsLoading || userLoading || deliveriesLoading || bidsLoading || chartLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <LoadingPackage text="Loading dashboard..." />
+      </div>
+    );
+  }
 
   return (
     <div className={`flex min-h-screen w-full`}>
@@ -120,14 +148,17 @@ export default function DriverDashboardPage() {
             </div>
             <div className="flex items-center gap-3">
               {/* Status toggle */}
-              <div className="flex items-center gap-2 bg-secondary rounded-full px-3 py-2">
+              <button
+                onClick={toggleStatus}
+                className="flex items-center gap-2 bg-secondary hover:bg-secondary/80 transition-colors rounded-full px-3 py-2 cursor-pointer"
+              >
                 <span
-                  className={`h-2 w-2 rounded-full ${user?.status === "online" ? "bg-green-500" : "bg-gray-400"}`}
+                  className={`h-2 w-2 rounded-full ${localStatus === "online" ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" : "bg-gray-400"}`}
                 />
                 <span className="text-xs font-medium text-secondary-foreground capitalize">
-                  {user?.status ?? "offline"}
+                  {localStatus}
                 </span>
-              </div>
+              </button>
               <div className="flex items-center gap-2 bg-card border border-border rounded-full px-3 py-2">
                 <Search className="h-4 w-4 text-gray-400" />
                 <input
@@ -136,10 +167,6 @@ export default function DriverDashboardPage() {
                   className="bg-transparent outline-none text-sm w-32 text-secondary-foreground placeholder:text-gray-400"
                 />
               </div>
-              <button className="relative p-2.5 rounded-full hover:bg-secondary transition-colors">
-                <Bell className="h-5 w-5 text-gray-500" />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500" />
-              </button>
             </div>
           </div>
         </header>
@@ -157,9 +184,9 @@ export default function DriverDashboardPage() {
               : [
                   {
                     label: "Today's Earnings",
-                    value: `$${stats?.todayEarnings.toFixed(2) ?? "0"}`,
-                    sub: `$${stats?.weekEarnings.toFixed(0) ?? "0"} this week`,
-                    icon: DollarSign,
+                    value: formatINR(stats?.todayEarnings ?? 0),
+                    sub: `${formatINR(stats?.weekEarnings ?? 0, { maximumFractionDigits: 0, minimumFractionDigits: 0 })} this week`,
+                    icon: IndianRupee,
                     color: "text-stone-600",
                     bg: "bg-stone-100 dark:bg-stone-800/20",
                   },
@@ -549,7 +576,10 @@ export default function DriverDashboardPage() {
                         className="flex-1 flex flex-col items-center gap-1"
                       >
                         <span className="text-[10px] font-medium text-foreground">
-                          ${e.amount.toFixed(0)}
+                          {formatINR(e.amount, {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0,
+                          })}
                         </span>
                         <div
                           className="w-full rounded-t-lg bg-primary/20 relative"
@@ -569,7 +599,7 @@ export default function DriverDashboardPage() {
                 <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
                   <span className="text-xs text-gray-500">This week total</span>
                   <span className="text-sm font-bold text-foreground">
-                    ${stats?.weekEarnings.toFixed(2) ?? "—"}
+                    {stats ? formatINR(stats.weekEarnings) : "—"}
                   </span>
                 </div>
               </div>
@@ -620,10 +650,10 @@ export default function DriverDashboardPage() {
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className="text-sm font-bold text-foreground">
-                                ${bid.offeredPrice.toFixed(2)}
+                                {formatINR(bid.offeredPrice)}
                               </span>
                               <span className="text-[10px] text-gray-400 line-through">
-                                ${bid.listedPrice.toFixed(2)}
+                                {formatINR(bid.listedPrice)}
                               </span>
                             </div>
                           </div>
@@ -672,7 +702,7 @@ export default function DriverDashboardPage() {
                     href="/driver/earnings"
                     className="flex flex-col items-center gap-1.5 p-3 rounded-full bg-stone-100 dark:bg-stone-800/10 hover:bg-stone-200 dark:hover:bg-stone-800/20 transition-colors text-center"
                   >
-                    <DollarSign className="h-5 w-5 text-stone-600" />
+                    <IndianRupee className="h-5 w-5 text-stone-600" />
                     <span className="text-xs font-medium text-secondary-foreground">
                       Earnings
                     </span>

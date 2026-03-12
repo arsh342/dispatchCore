@@ -32,10 +32,10 @@ module.exports = (sequelize) => {
                 allowNull: true,
                 references: { model: 'vehicles', key: 'id' },
             },
-            assigned_by: {
+            assigned_by_company_id: {
                 type: DataTypes.INTEGER,
-                allowNull: true,
-                references: { model: 'users', key: 'id' },
+                allowNull: false,
+                references: { model: 'companies', key: 'id' },
             },
             source: {
                 type: DataTypes.ENUM('DIRECT', 'BID'),
@@ -61,7 +61,10 @@ module.exports = (sequelize) => {
         Assignment.belongsTo(models.Order, { foreignKey: 'order_id', as: 'order' });
         Assignment.belongsTo(models.Driver, { foreignKey: 'driver_id', as: 'driver' });
         Assignment.belongsTo(models.Vehicle, { foreignKey: 'vehicle_id', as: 'vehicle' });
-        Assignment.belongsTo(models.User, { foreignKey: 'assigned_by', as: 'assignedByUser' });
+        Assignment.belongsTo(models.Company, {
+            foreignKey: 'assigned_by_company_id',
+            as: 'assignedByCompany',
+        });
         Assignment.hasMany(models.RouteStop, { foreignKey: 'assignment_id', as: 'routeStops' });
         Assignment.hasMany(models.DeliveryEvent, { foreignKey: 'assignment_id', as: 'events' });
     };

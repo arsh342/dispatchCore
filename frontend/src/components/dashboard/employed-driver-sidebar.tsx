@@ -6,8 +6,6 @@ import {
   Calendar,
   MessageSquare,
   ChevronsRight,
-  Moon,
-  Sun,
   LogOut,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -41,7 +39,10 @@ const navItems = [
   { icon: MessageSquare, label: "Messages", href: "/employed-driver/messages" },
 ];
 
-export function EmployedDriverSidebar({ isDark, setIsDark }: SidebarProps) {
+export function EmployedDriverSidebar({
+  isDark: _isDark,
+  setIsDark: _setIsDark,
+}: SidebarProps) {
   const [open, setOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
@@ -153,23 +154,6 @@ export function EmployedDriverSidebar({ isDark, setIsDark }: SidebarProps) {
           )}
         </button>
 
-        {/* Dark mode toggle */}
-        <div
-          className={`flex items-center ${open ? "gap-1 bg-secondary rounded-full p-1" : "flex-col gap-1"}`}
-        >
-          <button
-            onClick={() => setIsDark(false)}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-medium transition-colors ${!isDark ? "bg-white dark:bg-gray-700 shadow-sm text-foreground" : "text-muted-foreground"}`}
-          >
-            <Sun className="h-3.5 w-3.5" /> {open && "Light"}
-          </button>
-          <button
-            onClick={() => setIsDark(true)}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-medium transition-colors ${isDark ? "bg-white dark:bg-accent shadow-sm text-foreground" : "text-muted-foreground"}`}
-          >
-            <Moon className="h-3.5 w-3.5" /> {open && "Dark"}
-          </button>
-        </div>
       </div>
 
       {/* Collapse */}

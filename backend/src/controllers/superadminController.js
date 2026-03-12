@@ -5,11 +5,35 @@
  * No tenant scoping — these span all companies.
  */
 
-const { Company, Order, Driver, User, Assignment } = require('../models');
+const { Company, Order, Driver, Assignment, SuperadminSetting } = require('../models');
 const { success } = require('../utils/response');
 const { ORDER_STATUS } = require('../utils/constants');
 const { Op } = require('sequelize');
-const sequelize = require('../models').sequelize;
+
+const getCreatedAt = (record) => record?.createdAt ?? record?.created_at ?? null;
+const defaultNotificationPreferences = {
+  platform_alerts: true,
+  company_registrations: true,
+  driver_verifications: true,
+  daily_summary: false,
+};
+const defaultAppearancePreferences = {
+  theme: 'dark',
+};
+
+const getOrCreateSuperadminSettings = async () => {
+  const [settings] = await SuperadminSetting.findOrCreate({
+    where: { id: 1 },
+    defaults: {
+      name: 'Platform Admin',
+      email: process.env.SUPERADMIN_EMAIL || 'admin@dispatchcore.com',
+      notification_preferences: defaultNotificationPreferences,
+      appearance_preferences: defaultAppearancePreferences,
+    },
+  });
+
+  return settings;
+};
 
 /**
  * GET /api/superadmin/stats
@@ -54,7 +78,7 @@ const getPlatformStats = async (req, res, next) => {
 
 /**
  * GET /api/superadmin/companies
- * List all companies with order/driver/user counts
+ * List all companies with order/driver counts
  */
 const getCompanies = async (req, res, next) => {
   try {
@@ -65,21 +89,20 @@ const getCompanies = async (req, res, next) => {
     const result = [];
 
     for (const company of companies) {
-      const [orderCount, driverCount, userCount] = await Promise.all([
+      const [orderCount, driverCount] = await Promise.all([
         Order.count({ where: { company_id: company.id } }),
         Driver.count({ where: { company_id: company.id } }),
-        User.count({ where: { company_id: company.id } }),
       ]);
 
       result.push({
         id: company.id,
         name: company.name,
         address: company.address,
+        location: company.location || company.address,
         planType: company.plan_type,
-        createdAt: company.created_at,
+        createdAt: getCreatedAt(company),
         orderCount,
         driverCount,
-        userCount,
       });
     }
 
@@ -97,7 +120,6 @@ const getAllDrivers = async (req, res, next) => {
   try {
     const drivers = await Driver.findAll({
       include: [
-        { model: User, as: 'user', attributes: ['id', 'name', 'email', 'phone'] },
         { model: Company, as: 'company', attributes: ['id', 'name'], required: false },
       ],
       order: [['created_at', 'DESC']],
@@ -126,9 +148,9 @@ const getAllDrivers = async (req, res, next) => {
 
       result.push({
         id: d.id,
-        name: d.user?.name ?? 'Unknown',
-        email: d.user?.email ?? '',
-        phone: d.user?.phone ?? '',
+        name: d.name ?? 'Unknown',
+        email: d.email ?? '',
+        phone: d.phone ?? '',
         type: d.type,
         status: d.status,
         verificationStatus: d.verification_status,
@@ -137,7 +159,7 @@ const getAllDrivers = async (req, res, next) => {
         companyId: d.company_id,
         activeAssignments,
         completedDeliveries,
-        createdAt: d.created_at,
+        createdAt: getCreatedAt(d),
       });
     }
 
@@ -177,7 +199,7 @@ const getAllOrders = async (req, res, next) => {
       listedPrice: o.listed_price,
       companyName: o.company?.name ?? 'N/A',
       companyId: o.company_id,
-      createdAt: o.created_at,
+      createdAt: getCreatedAt(o),
     }));
 
     return success(res, result, {
@@ -191,4 +213,57 @@ const getAllOrders = async (req, res, next) => {
   }
 };
 
-module.exports = { getPlatformStats, getCompanies, getAllDrivers, getAllOrders };
+const getSettings = async (req, res, next) => {
+  try {
+    const settings = await getOrCreateSuperadminSettings();
+
+    return success(res, {
+      name: settings.name,
+      email: settings.email,
+      notification_preferences:
+        settings.notification_preferences ?? defaultNotificationPreferences,
+      appearance_preferences:
+        settings.appearance_preferences ?? defaultAppearancePreferences,
+      login_email: process.env.SUPERADMIN_EMAIL || settings.email,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateSettings = async (req, res, next) => {
+  try {
+    const settings = await getOrCreateSuperadminSettings();
+    const { name, email, notification_preferences, appearance_preferences } = req.body;
+
+    await settings.update({
+      name: name ?? settings.name,
+      email: email ?? settings.email,
+      notification_preferences:
+        notification_preferences ?? settings.notification_preferences ?? defaultNotificationPreferences,
+      appearance_preferences:
+        appearance_preferences ?? settings.appearance_preferences ?? defaultAppearancePreferences,
+    });
+
+    return success(res, {
+      name: settings.name,
+      email: settings.email,
+      notification_preferences:
+        settings.notification_preferences ?? defaultNotificationPreferences,
+      appearance_preferences:
+        settings.appearance_preferences ?? defaultAppearancePreferences,
+      login_email: process.env.SUPERADMIN_EMAIL || settings.email,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  getPlatformStats,
+  getCompanies,
+  getAllDrivers,
+  getAllOrders,
+  getSettings,
+  updateSettings,
+};

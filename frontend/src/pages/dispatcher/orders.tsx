@@ -3,7 +3,6 @@ import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { useTheme } from "@/hooks/useTheme";
 import {
   Search,
-  Filter,
   Plus,
   Package,
   Loader2,
@@ -11,9 +10,9 @@ import {
   MapPin,
   Clock,
   CheckCircle2,
-  MoreHorizontal,
   X,
   UserPlus,
+  ChevronDown,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import LoadingPackage from "@/components/ui/loading-package";
@@ -153,8 +152,8 @@ export default function OrdersPage() {
 
         <div className="p-6">
           {/* Search */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 flex items-center gap-2 bg-card border border-border rounded-full px-3 py-2.5">
+          <div className="mb-4">
+            <div className="flex items-center gap-2 bg-card border border-border rounded-full px-3 py-2.5">
               <Search className="h-4 w-4 text-gray-400" />
               <input
                 type="text"
@@ -164,9 +163,6 @@ export default function OrdersPage() {
                 className="flex-1 bg-transparent outline-none text-sm text-secondary-foreground placeholder:text-gray-400"
               />
             </div>
-            <button className="p-2.5 rounded-full bg-card border border-border text-gray-500 hover:text-gray-700 transition-colors">
-              <Filter className="h-4 w-4" />
-            </button>
           </div>
 
           {/* Table */}
@@ -195,19 +191,18 @@ export default function OrdersPage() {
                   <th className="text-left p-4 text-xs font-medium text-muted-foreground uppercase">
                     Status
                   </th>
-                  <th className="p-4" />
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-gray-400">
+                    <td colSpan={7} className="p-8 text-center text-gray-400">
                       <LoadingPackage />
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-8">
+                    <td colSpan={7} className="p-8">
                       <EmptyState
                         icon={Package}
                         title="No orders found"
@@ -267,11 +262,6 @@ export default function OrdersPage() {
                             <StatusIcon className="h-3 w-3" />
                             {sc?.label ?? o.status}
                           </span>
-                        </td>
-                        <td className="p-4">
-                          <button className="p-1.5 rounded-lg hover:bg-secondary text-gray-400 hover:text-gray-600 transition-colors">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </button>
                         </td>
                       </tr>
                     );
@@ -359,18 +349,21 @@ export default function OrdersPage() {
                   <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                     Priority
                   </label>
-                  <select
-                    value={orderForm.priority}
-                    onChange={(e) =>
-                      setOrderForm((p) => ({ ...p, priority: e.target.value }))
-                    }
-                    className="w-full px-4 py-2.5 rounded-full border border-border bg-card text-sm text-foreground outline-none focus:border-primary"
-                  >
-                    <option value="LOW">Low</option>
-                    <option value="NORMAL">Normal</option>
-                    <option value="HIGH">High</option>
-                    <option value="URGENT">Urgent</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={orderForm.priority}
+                      onChange={(e) =>
+                        setOrderForm((p) => ({ ...p, priority: e.target.value }))
+                      }
+                      className="w-full appearance-none rounded-full border border-border bg-card px-4 py-2.5 pr-12 text-sm text-foreground outline-none focus:border-primary"
+                    >
+                      <option value="LOW">Low</option>
+                      <option value="NORMAL">Normal</option>
+                      <option value="HIGH">High</option>
+                      <option value="URGENT">Urgent</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  </div>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1.5 block">

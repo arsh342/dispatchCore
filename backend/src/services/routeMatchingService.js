@@ -9,9 +9,10 @@
  */
 
 const { Op } = require('sequelize');
-const { DriverRoute, Driver, User } = require('../models');
+const { DriverRoute, Driver } = require('../models');
 const { DRIVER_TYPE, VERIFICATION_STATUS } = require('../utils/constants');
 const logger = require('../config/logger');
+const { attachLegacyUserShape } = require('../utils/driverSerializer');
 
 // Earth's radius in kilometers
 const EARTH_RADIUS_KM = 6371;
@@ -89,7 +90,7 @@ class RouteMatchingService {
    * @returns {Promise<DriverRoute[]>}
    */
   async getActiveRoutes() {
-    return DriverRoute.findAll({
+    const routes = await DriverRoute.findAll({
       where: {
         is_active: true,
         departure_time: { [Op.gte]: new Date() },
@@ -100,13 +101,20 @@ class RouteMatchingService {
           as: 'driver',
           where: {
             type: DRIVER_TYPE.INDEPENDENT,
-            verification_status: VERIFICATION_STATUS.VERIFIED,
           },
-          include: [{ model: User, as: 'user', attributes: ['id', 'name', 'phone', 'email'] }],
+          attributes: ['id', 'name', 'email', 'phone', 'type', 'verification_status'],
         },
       ],
       order: [['departure_time', 'ASC']],
     });
+
+    routes.forEach((route) => {
+      if (route.driver) {
+        attachLegacyUserShape(route.driver);
+      }
+    });
+
+    return routes;
   }
 
   /**
@@ -142,9 +150,8 @@ class RouteMatchingService {
           as: 'driver',
           where: {
             type: DRIVER_TYPE.INDEPENDENT,
-            verification_status: VERIFICATION_STATUS.VERIFIED,
           },
-          include: [{ model: User, as: 'user', attributes: ['id', 'name', 'phone', 'email'] }],
+          attributes: ['id', 'name', 'email', 'phone', 'type', 'verification_status'],
         },
       ],
     });
@@ -202,6 +209,7 @@ class RouteMatchingService {
       if (!pickupMatch && !deliveryMatch) continue;
       if (seenDriverIds.has(route.driver_id)) continue;
       seenDriverIds.add(route.driver_id);
+      attachLegacyUserShape(route.driver);
 
       // Determine overall match quality
       let matchType = 'enroute';

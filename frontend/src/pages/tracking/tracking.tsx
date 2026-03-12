@@ -71,7 +71,7 @@ interface TrackingData {
     recipientName: string | null;
     recipientPhone: string | null;
     recipientEmail: string | null;
-    createdAt: string;
+    createdAt: string | null;
   };
   company: { id: number; name: string; address: string | null } | null;
   driver: {
@@ -90,6 +90,29 @@ interface TrackingData {
   } | null;
   estimatedArrival?: string;
   events: Array<{ type: string; timestamp: string; notes: string | null }>;
+}
+
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatShortDate(value: string | null | undefined): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 // ── Status timeline config ──
@@ -630,13 +653,7 @@ export default function CustomerTrackingPage() {
               </div>
               <p className="text-sm text-muted-foreground">
                 Order #{data.order.id} · Placed{" "}
-                {new Date(data.order.createdAt).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {formatDateTime(data.order.createdAt)}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -770,10 +787,7 @@ export default function CustomerTrackingPage() {
                   <div>
                     <p className="text-xs text-muted-foreground">Created</p>
                     <p className="text-sm font-medium text-foreground">
-                      {new Date(data.order.createdAt).toLocaleDateString(
-                        "en-US",
-                        { month: "short", day: "numeric" },
-                      )}
+                      {formatShortDate(data.order.createdAt)}
                     </p>
                   </div>
                 </div>

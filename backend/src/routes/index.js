@@ -15,7 +15,7 @@ const driverRoutes = require('./driverRoutes');
 const locationRoutes = require('./locationRoutes');
 const historyRoutes = require('./historyRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
-const userRoutes = require('./userRoutes');
+const authRoutes = require('./authRoutes');
 const superadminRoutes = require('./superadminRoutes');
 const messageRoutes = require('./messageRoutes');
 
@@ -27,7 +27,7 @@ router.use('/drivers', driverRoutes);
 router.use('/location', locationRoutes);
 router.use('/history', historyRoutes);
 router.use('/dashboard', dashboardRoutes);
-router.use('/users', userRoutes);
+router.use('/auth', authRoutes);
 router.use('/superadmin', superadminRoutes);
 router.use('/messages', messageRoutes);
 

@@ -2,16 +2,17 @@
  * History Service
  *
  * Provides role-scoped delivery history.
- * Dispatchers see full order details (customer info, pricing, all events).
+ * Dispatchers see full order details (recipient info, pricing, all events).
  * Drivers see only their own deliveries with limited fields.
  *
  * Field projection per role is defined in system_design.md §6.3.
  */
 
 const { Op } = require('sequelize');
-const { Assignment, Order, Driver, Vehicle, User, DeliveryEvent, Company } = require('../models');
+const { Assignment, Order, Driver, Vehicle, DeliveryEvent, Company, Bid } = require('../models');
 const { ROLES } = require('../utils/constants');
 const logger = require('../config/logger');
+const { attachLegacyUserShape } = require('../utils/driverSerializer');
 
 // Field projections per role
 const DISPATCHER_ORDER_FIELDS = [
@@ -27,6 +28,9 @@ const DISPATCHER_ORDER_FIELDS = [
   'delivery_lng',
   'delivery_address',
   'priority',
+  'recipient_name',
+  'recipient_phone',
+  'recipient_email',
   'notes',
   'created_at',
   'updated_at',
@@ -42,6 +46,9 @@ const DRIVER_ORDER_FIELDS = [
   'delivery_lat',
   'delivery_lng',
   'delivery_address',
+  'recipient_name',
+  'recipient_phone',
+  'recipient_email',
   'created_at',
   'updated_at',
 ];
@@ -59,8 +66,10 @@ const INDEPENDENT_DRIVER_ORDER_FIELDS = [
   'delivery_lat',
   'delivery_lng',
   'delivery_address',
+  'recipient_name',
+  'recipient_phone',
+  'recipient_email',
   'notes',
-  'customer_id',
   'company_id',
   'created_at',
   'updated_at',
@@ -88,8 +97,7 @@ class HistoryService {
         {
           model: Driver,
           as: 'driver',
-          attributes: ['id', 'type', 'status', 'license_number'],
-          include: [{ model: User, as: 'user', attributes: ['id', 'name', 'phone'] }],
+          attributes: ['id', 'name', 'email', 'phone', 'type', 'status', 'license_number'],
         },
         {
           model: Vehicle,
@@ -97,9 +105,9 @@ class HistoryService {
           attributes: ['id', 'plate_number', 'type'],
         },
         {
-          model: User,
-          as: 'assignedByUser',
-          attributes: ['id', 'name'],
+          model: Company,
+          as: 'assignedByCompany',
+          attributes: ['id', 'name', 'email'],
         },
         {
           model: DeliveryEvent,
@@ -113,13 +121,16 @@ class HistoryService {
       distinct: true,
     });
 
-    // Include customer info for dispatchers
     for (const assignment of rows) {
-      if (assignment.order && assignment.order.customer_id) {
-        const customer = await User.findByPk(assignment.order.customer_id, {
-          attributes: ['id', 'name', 'phone', 'email'],
-        });
-        assignment.dataValues.customer = customer;
+      if (assignment.driver) {
+        attachLegacyUserShape(assignment.driver);
+      }
+      if (assignment.order) {
+        assignment.dataValues.recipient = {
+          name: assignment.order.recipient_name || null,
+          phone: assignment.order.recipient_phone || null,
+          email: assignment.order.recipient_email || null,
+        };
       }
     }
 
@@ -163,6 +174,19 @@ class HistoryService {
       },
     ];
 
+    // Include the accepted bid so frontend can use offered_price for earnings
+    // Bids are linked via order_id + driver_id
+    // We'll include them via the Order → Bid association filtered to ACCEPTED
+    includes[0].include = [
+      {
+        model: Bid,
+        as: 'bids',
+        where: { status: 'ACCEPTED' },
+        required: false,
+        attributes: ['id', 'offered_price', 'status'],
+      },
+    ];
+
     // Employed drivers can see vehicle info
     if (driverType === 'EMPLOYED') {
       includes.push({
@@ -171,6 +195,13 @@ class HistoryService {
         attributes: ['id', 'plate_number', 'type'],
       });
     }
+
+    // Include the assigning company name
+    includes.push({
+      model: Company,
+      as: 'assignedByCompany',
+      attributes: ['id', 'name'],
+    });
 
     const { rows, count } = await Assignment.findAndCountAll({
       where: { driver_id: driverId },
@@ -208,7 +239,7 @@ class HistoryService {
       whereClause.driver_id = driverId;
     }
 
-    return Assignment.findOne({
+    const assignment = await Assignment.findOne({
       where: whereClause,
       include: [
         { model: Order, as: 'order', attributes: orderFields },
@@ -220,11 +251,16 @@ class HistoryService {
         {
           model: Driver,
           as: 'driver',
-          attributes: ['id', 'type'],
-          include: [{ model: User, as: 'user', attributes: ['id', 'name'] }],
+          attributes: ['id', 'name', 'email', 'phone', 'type'],
         },
       ],
     });
+
+    if (assignment?.driver) {
+      attachLegacyUserShape(assignment.driver);
+    }
+
+    return assignment;
   }
 
   /**

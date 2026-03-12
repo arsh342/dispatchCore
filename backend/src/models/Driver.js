@@ -19,15 +19,30 @@ module.exports = (sequelize) => {
                 primaryKey: true,
                 autoIncrement: true,
             },
-            user_id: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-                references: { model: 'users', key: 'id' },
-            },
             company_id: {
                 type: DataTypes.INTEGER,
                 allowNull: true, // null for independent drivers
                 references: { model: 'companies', key: 'id' },
+            },
+            name: {
+                type: DataTypes.STRING(100),
+                allowNull: true,
+            },
+            email: {
+                type: DataTypes.STRING(255),
+                allowNull: true,
+                unique: true,
+                validate: {
+                    isEmail: { msg: 'Must be a valid email address' },
+                },
+            },
+            phone: {
+                type: DataTypes.STRING(20),
+                allowNull: true,
+            },
+            password_hash: {
+                type: DataTypes.STRING(255),
+                allowNull: true,
             },
             type: {
                 type: DataTypes.ENUM('EMPLOYED', 'INDEPENDENT'),
@@ -47,21 +62,28 @@ module.exports = (sequelize) => {
                 type: DataTypes.STRING(50),
                 allowNull: true,
             },
+            notification_preferences: {
+                type: DataTypes.JSON,
+                allowNull: true,
+            },
+            appearance_preferences: {
+                type: DataTypes.JSON,
+                allowNull: true,
+            },
         },
         {
             tableName: 'drivers',
             timestamps: true,
             underscored: true,
             indexes: [
+                { fields: ['email'], unique: true },
                 { fields: ['company_id', 'status'] },
                 { fields: ['type', 'status'] },
-                { fields: ['user_id'], unique: true },
             ],
         },
     );
 
     Driver.associate = (models) => {
-        Driver.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
         Driver.belongsTo(models.Company, { foreignKey: 'company_id', as: 'company' });
         Driver.hasMany(models.DriverRoute, { foreignKey: 'driver_id', as: 'routes' });
         Driver.hasMany(models.Bid, { foreignKey: 'driver_id', as: 'bids' });

@@ -7,10 +7,11 @@
 
 const { Op } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
-const { Order, Bid, Assignment, DeliveryEvent, Driver, User, Vehicle } = require('../models');
+const { Order, Bid, Assignment, DeliveryEvent, Driver, Vehicle } = require('../models');
 const { success } = require('../utils/response');
 const { NotFoundError } = require('../utils/errors');
 const { ORDER_STATUS } = require('../utils/constants');
+const { attachLegacyUserShape } = require('../utils/driverSerializer');
 
 const createOrder = async (req, res, next) => {
   try {
@@ -24,7 +25,6 @@ const createOrder = async (req, res, next) => {
       priority,
       weight_kg,
       notes,
-      customer_id,
       recipient_name,
       recipient_phone,
       recipient_email,
@@ -32,7 +32,6 @@ const createOrder = async (req, res, next) => {
 
     const order = await Order.create({
       company_id: req.tenantId,
-      customer_id: customer_id || null,
       tracking_code: uuidv4(),
       status: ORDER_STATUS.UNASSIGNED,
       pickup_lat,
@@ -106,8 +105,7 @@ const getOrders = async (req, res, next) => {
             {
               model: Driver,
               as: 'driver',
-              attributes: ['id', 'type', 'status'],
-              include: [{ model: User, as: 'user', attributes: ['id', 'name', 'phone'] }],
+              attributes: ['id', 'name', 'email', 'phone', 'type', 'status'],
             },
             {
               model: Vehicle,
@@ -116,10 +114,23 @@ const getOrders = async (req, res, next) => {
             },
           ],
         },
+        {
+          model: Bid,
+          as: 'bids',
+          where: { status: 'ACCEPTED' },
+          required: false,
+          attributes: ['id', 'offered_price', 'status'],
+        },
       ],
       order: [['created_at', 'DESC']],
       limit: parseInt(limit, 10),
       offset,
+    });
+
+    rows.forEach((row) => {
+      if (row.assignment?.driver) {
+        attachLegacyUserShape(row.assignment.driver);
+      }
     });
 
     return success(res, rows, {
@@ -178,14 +189,13 @@ const assignOrder = async (req, res, next) => {
     const { driver_id, vehicle_id, route_match } = req.body;
     const assignmentService = req.app.get('assignmentService');
 
-    // CE-02: Replace with req.user.id from JWT
-    const dispatcherId = req.headers['x-user-id'] ? parseInt(req.headers['x-user-id'], 10) : null;
+    const companyId = req.tenantId;
 
     const assignment = await assignmentService.assignOrder(
       parseInt(req.params.id, 10),
       driver_id,
       vehicle_id || null,
-      dispatcherId,
+      companyId,
       { allowBusy: !!route_match },
     );
 
@@ -207,6 +217,13 @@ const getOrderBids = async (req, res, next) => {
 
     const bids = await Bid.findAll({
       where: { order_id: req.params.id },
+      include: [
+        {
+          model: Driver,
+          as: 'driver',
+          attributes: ['id', 'name', 'email', 'phone', 'type'],
+        },
+      ],
       order: [['created_at', 'DESC']],
     });
 

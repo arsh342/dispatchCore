@@ -8,7 +8,7 @@
  *       Remaining bids rejected → Bid converts to Assignment
  */
 
-const { sequelize, Order, Bid, Driver, Assignment, DeliveryEvent } = require('../models');
+const { sequelize, Order, Bid, Driver, Vehicle, Assignment, DeliveryEvent } = require('../models');
 const {
     ORDER_STATUS,
     BID_STATUS,
@@ -200,13 +200,20 @@ class MarketplaceService {
             // Update driver status
             await bid.driver.update({ status: DRIVER_STATUS.BUSY }, { transaction });
 
+            // Find driver's vehicle (if any)
+            const driverVehicle = await Vehicle.findOne({
+                where: { driver_id: bid.driver_id },
+                attributes: ['id'],
+                transaction,
+            });
+
             // Create assignment from the accepted bid
             const assignment = await Assignment.create(
                 {
                     order_id: bid.order_id,
                     driver_id: bid.driver_id,
-                    vehicle_id: null, // Independent drivers use their own vehicle
-                    assigned_by: null, // System-assigned via bid acceptance
+                    vehicle_id: driverVehicle ? driverVehicle.id : null,
+                    assigned_by_company_id: bid.order.company_id,
                     source: ASSIGNMENT_SOURCE.BID,
                 },
                 { transaction },

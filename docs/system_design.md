@@ -24,59 +24,64 @@ Last-mile delivery is the most expensive segment of the logistics chain. Small a
 ### 1.2 Functional Requirements
 
 #### SuperAdmin
-| ID | Requirement |
-|---|---|
-| FR-SA-01 | View and manage all companies on the platform |
-| FR-SA-02 | View platform-wide KPIs (total deliveries, active drivers, revenue) |
-| FR-SA-03 | Approve or suspend companies |
-| FR-SA-04 | Resolve cross-company disputes |
-
-#### Admin (Company-Level)
-| ID | Requirement |
-|---|---|
-| FR-AD-01 | Manage company profile and settings |
-| FR-AD-02 | Approve or reject independent driver verification requests |
-| FR-AD-03 | Add/remove employed drivers and dispatchers |
-| FR-AD-04 | View company-level analytics |
+| ID | Requirement | Status |
+|---|---|---|
+| FR-SA-01 | View platform-wide KPIs (total companies, drivers, orders, deliveries) | ✅ Implemented |
+| FR-SA-02 | Manage all companies on the platform | ✅ Implemented |
+| FR-SA-03 | View and manage all drivers across the platform | ✅ Implemented |
+| FR-SA-04 | View and manage all orders across the platform | ✅ Implemented |
+| FR-SA-05 | Manage persistent superadmin settings/preferences | ✅ Implemented |
+| FR-SA-06 | View platform-wide analytics | ✅ Implemented |
 
 #### Dispatcher
-| ID | Requirement |
-|---|---|
-| FR-D-01 | Create new delivery orders with pickup/dropoff coordinates |
-| FR-D-02 | Assign orders directly to employed drivers (with concurrency safety) |
-| FR-D-03 | List orders on the public marketplace with a listed price |
-| FR-D-04 | View and accept/reject bids from independent drivers |
-| FR-D-05 | View live map showing all employed drivers and active independent drivers |
-| FR-D-06 | View real-time order status updates |
-| FR-D-07 | View route-matched independent drivers near an order's path |
-| FR-D-08 | View full delivery history (all fields: customer, pricing, events, driver info) |
+| ID | Requirement | Status |
+|---|---|---|
+| FR-D-01 | Create new delivery orders with pickup/dropoff coordinates | ✅ Implemented |
+| FR-D-02 | Assign orders directly to employed drivers (with concurrency safety) | ✅ Implemented |
+| FR-D-03 | List orders on the public marketplace with a listed price | ✅ Implemented |
+| FR-D-04 | View and accept/reject bids from independent drivers | ✅ Implemented |
+| FR-D-05 | View live map showing all employed drivers and active independent drivers | ✅ Implemented |
+| FR-D-06 | View real-time order status updates | ✅ Implemented |
+| FR-D-07 | View route-matched independent drivers near an order's path | ✅ Implemented |
+| FR-D-08 | View full delivery history (all fields: customer, pricing, events, driver info) | ✅ Implemented |
+| FR-D-09 | In-app messaging with drivers and recipients (per-order channels) | ✅ Implemented |
+| FR-D-10 | View dispatcher-specific analytics dashboard | ✅ Implemented |
+| FR-D-11 | Manage company drivers (create, view profiles) | ✅ Implemented |
+| FR-D-12 | View active driver routes on the map | ✅ Implemented |
 
 #### Employed Driver
-| ID | Requirement |
-|---|---|
-| FR-ED-01 | Receive assigned deliveries in real-time |
-| FR-ED-02 | Update delivery status (PICKED_UP → EN_ROUTE → DELIVERED) |
-| FR-ED-03 | Stream GPS location continuously while online |
-| FR-ED-04 | View assigned delivery queue and route map |
-| FR-ED-05 | View own delivery history (limited fields: pickup/dropoff, status, timestamps) |
+| ID | Requirement | Status |
+|---|---|---|
+| FR-ED-01 | Receive assigned deliveries in real-time | ✅ Implemented |
+| FR-ED-02 | Update delivery status (ASSIGNED → PICKED_UP → EN_ROUTE → DELIVERED) | ✅ Implemented |
+| FR-ED-03 | Stream GPS location continuously while online | ✅ Implemented |
+| FR-ED-04 | View assigned delivery queue and active deliveries | ✅ Implemented |
+| FR-ED-05 | View own delivery history (limited fields) | ✅ Implemented |
+| FR-ED-06 | In-app messaging with dispatcher and recipient | ✅ Implemented |
+| FR-ED-07 | View shift schedule | ✅ Implemented |
+| FR-ED-08 | Dashboard with stats, shift progress, and company info | ✅ Implemented |
+| FR-ED-09 | Auto-refresh dashboard every 30s to sync with dispatcher changes | ✅ Implemented |
 
 #### Independent Driver
-| ID | Requirement |
-|---|---|
-| FR-ID-01 | Register and submit verification documents |
-| FR-ID-02 | Browse marketplace listings from all companies |
-| FR-ID-03 | Place counter-offer bids on listed orders |
-| FR-ID-04 | Pre-register travel routes (start, destination, departure time) |
-| FR-ID-05 | Stream GPS only during active delivery |
-| FR-ID-06 | Update delivery status once a bid is accepted |
-| FR-ID-07 | View own delivery history (limited fields: pickup/dropoff, earnings, timestamps) |
+| ID | Requirement | Status |
+|---|---|---|
+| FR-ID-01 | Register as independent driver (signup flow) | ✅ Implemented |
+| FR-ID-02 | Browse marketplace listings from all companies | ✅ Implemented |
+| FR-ID-03 | Place counter-offer bids on listed orders | ✅ Implemented |
+| FR-ID-04 | Pre-register travel routes (start, destination, departure time) | ✅ Implemented |
+| FR-ID-05 | Stream GPS during active delivery via geolocation hook | ✅ Implemented |
+| FR-ID-06 | Update delivery status once a bid is accepted | ✅ Implemented |
+| FR-ID-07 | View own delivery history with earnings | ✅ Implemented |
+| FR-ID-08 | In-app messaging with dispatcher and recipient | ✅ Implemented |
+| FR-ID-09 | View earnings dashboard (today, weekly, chart) computed from history | ✅ Implemented |
+| FR-ID-10 | View and manage own bids | ✅ Implemented |
 
 #### Customer
-| ID | Requirement |
-|---|---|
-| FR-C-01 | Track delivery live via a public link (no login required) |
-| FR-C-02 | View order status timeline |
-| FR-C-03 | See a live map pin of the driver's current location |
+| ID | Requirement | Status |
+|---|---|---|
+| FR-C-01 | Track delivery live via public link (no login required) | ✅ Implemented |
+| FR-C-02 | View order status timeline | ✅ Implemented |
+| FR-C-03 | See a live map pin of the driver's current location | ✅ Implemented |
 
 ### 1.3 Non-Functional Requirements
 
@@ -89,16 +94,15 @@ Last-mile delivery is the most expensive segment of the logistics chain. Small a
 | **Scalability** | Concurrent WebSocket connections | 10,000+ per server |
 | **Scalability** | GPS pings per second | 1,000+ writes/sec |
 | **Security** | Data isolation | Strict tenant boundary (company_id scoping) |
-| **Security** | Authentication | JWT tokens with role-based access (CE-02) |
-| **Performance** | GraphQL dashboard query | < 200ms with DataLoader |
+| **Security** | Authentication | Header-based identity (CE-02: JWT tokens) |
 
 ### 1.4 MoSCoW Prioritization
 
 | Priority | Features |
 |---|---|
-| **Must Have** | Multi-tenant isolation, Order CRUD, Direct assignment with locking, Live GPS tracking, WebSocket rooms, Marketplace listing, Bidding, Customer tracking page, Delivery history (role-scoped) |
-| **Should Have** | Route pre-registration, Route matching, GraphQL analytics, Bid counter-offers, Delivery event audit log |
-| **Won't Have (CE-01)** | JWT auth, GraphQL, Redux Toolkit, Push notifications, AI route optimization, Email notifications, CI/CD |
+| **Must Have** | Multi-tenant isolation, Order CRUD, Direct assignment with locking, Live GPS tracking, WebSocket rooms, Marketplace listing, Bidding, Customer tracking page, Delivery history (role-scoped), In-app messaging |
+| **Should Have** | Route pre-registration, Route matching, Delivery event audit log, Earnings computation, Auto-refresh dashboards, Server-side status transition enforcement |
+| **Won't Have (CE-01)** | JWT auth, GraphQL analytics, Push notifications, AI route optimization, Email notifications, CI/CD, WebSocket auth handshakes, Hub management UI, RouteStop multi-delivery batching, Per-user rate limiting |
 
 ---
 
@@ -116,21 +120,16 @@ graph TB
         CT["Customer"]
     end
 
-    subgraph CDN["Static Assets"]
-        CF["Cloudflare / Vercel CDN"]
-    end
-
-    subgraph Frontend["Frontend (React + Vite)"]
-        RC["React Components"]
-        RTK["Local State (Zustand/Context)"]
-        AP["React Router DOM"]
+    subgraph Frontend["Frontend (React 19 + Vite 7)"]
+        RC["React Components (TSX)"]
+        RR["React Router DOM v7"]
         SC["Socket.io Client"]
+        TW["Tailwind CSS v4"]
+        FM["Framer Motion"]
     end
 
     subgraph Backend["Backend (Node.js + Express)"]
-        LB["Load Balancer (Nginx)"]
-        REST["REST API"]
-        GQL["GraphQL (Apollo Server)"]
+        REST["REST API (11 route modules)"]
         WS["Socket.io Server"]
         MW["Middleware Layer"]
     end
@@ -144,22 +143,16 @@ graph TB
     end
 
     subgraph Data["Data Layer"]
-        ORM["Sequelize ORM"]
-        DB[(MySQL)]
-        CACHE["Redis Cache (CE-02)"]
+        ORM["Sequelize ORM v6"]
+        DB[("MySQL")]
     end
 
-    Clients --> CDN --> Frontend
-    RC --> RTK
-    RTK --> RC
+    Clients --> Frontend
     RC --> REST
-    AP --> GQL
     SC --> WS
     REST --> MW --> Services
-    GQL --> MW --> Services
     WS --> Services
     Services --> ORM --> DB
-    Services -.-> CACHE
     Services --> WS
 ```
 
@@ -171,76 +164,29 @@ graph LR
     ED["Employed Driver"] -->|"Streams GPS, updates status"| DC
     ID["Independent Driver"] -->|"Bids, registers routes, streams GPS"| DC
     C["Customer"] -->|"Requests tracking"| DC
-    DC -->|"Live map, bid updates"| D
-    DC -->|"Assignment notifications"| ED
-    DC -->|"Bid results, marketplace"| ID
+    DC -->|"Live map, bid updates, messages"| D
+    DC -->|"Assignment notifications, messages"| ED
+    DC -->|"Bid results, marketplace, messages"| ID
     DC -->|"Live tracking pin"| C
 ```
 
-### 2.3 Data Flow Diagram (Level 1 - Processes)
-
-```mermaid
-graph TB
-    subgraph P1["P1: Order Management"]
-        P1A["Create Order"]
-        P1B["List on Marketplace"]
-        P1C["Direct Assign"]
-    end
-
-    subgraph P2["P2: Bidding Engine"]
-        P2A["Place Bid"]
-        P2B["Accept/Reject Bid"]
-        P2C["Convert to Assignment"]
-    end
-
-    subgraph P3["P3: Location Tracking"]
-        P3A["Receive GPS Ping"]
-        P3B["Apply Visibility Rules"]
-        P3C["Broadcast to Rooms"]
-    end
-
-    subgraph P4["P4: Route Matching"]
-        P4A["Register Route"]
-        P4B["Query Nearby Drivers"]
-    end
-
-    subgraph DS["Data Stores"]
-        D1[(Orders)]
-        D2[(Bids)]
-        D3[(Assignments)]
-        D4[(Location Logs)]
-        D5[(Driver Routes)]
-    end
-
-    P1A --> D1
-    P1B --> D1
-    P1C --> D3
-    P2A --> D2
-    P2B --> D2
-    P2C --> D3
-    P3A --> D4
-    P4A --> D5
-    P4B --> D5
-```
-
-### 2.4 Component Diagram
+### 2.3 Component Diagram
 
 ```mermaid
 graph TB
     subgraph Presentation["Presentation Layer"]
-        UI["React Views (5 dashboards)"]
+        UI["React Views (6 dashboards + extras)"]
         MAP["MapLibre GL Map (react-map-gl)"]
-        THEME["CSS Theme System"]
+        THEME["Tailwind CSS v4 + CSS Custom Properties"]
     end
 
     subgraph Communication["Communication Layer"]
-        HTTP["HTTP Client (Axios/Fetch)"]
+        HTTP["Fetch API (custom wrapper)"]
         WSC["Socket.io Client"]
     end
 
     subgraph API["API Layer"]
-        ROUTER["Express Router"]
-        GQLS["Apollo Server"]
+        ROUTER["Express Router (11 modules)"]
         WSS["Socket.io Server"]
     end
 
@@ -256,11 +202,12 @@ graph TB
         TENANT["Tenant Resolver"]
         VALID["Input Validator"]
         ERR["Error Handler"]
+        RATE["Rate Limiter"]
     end
 
     subgraph Persistence["Persistence Layer"]
-        SEQ["Sequelize Models"]
-        MYSQL[(MySQL)]
+        SEQ["Sequelize Models (13)"]
+        MYSQL[("MySQL")]
     end
 
     UI --> Communication --> API
@@ -276,22 +223,19 @@ graph TB
 
 ```mermaid
 erDiagram
-    COMPANY ||--o{ USER : employs
     COMPANY ||--o{ DRIVER : "has employed"
     COMPANY ||--o{ HUB : owns
     COMPANY ||--o{ ORDER : receives
     COMPANY ||--o{ VEHICLE : owns
 
-    USER ||--o{ ORDER : "places (customer)"
-
     DRIVER ||--o{ DRIVER_ROUTE : "pre-registers"
     DRIVER ||--o{ BID : submits
     DRIVER ||--o{ ASSIGNMENT : "assigned to"
     DRIVER ||--o{ DRIVER_LOCATION_LOG : "streams GPS"
-    DRIVER ||--o| VEHICLE : drives
 
     ORDER ||--o{ BID : "receives bids"
     ORDER ||--o| ASSIGNMENT : "fulfilled by"
+    ORDER ||--o{ MESSAGE : "has messages"
 
     ASSIGNMENT ||--o{ ROUTE_STOP : contains
     ASSIGNMENT ||--o{ DELIVERY_EVENT : logs
@@ -299,25 +243,21 @@ erDiagram
     COMPANY {
         int id PK
         string name
+        string email
+        string phone
+        string location
         string address
         string plan_type
         datetime created_at
     }
 
-    USER {
+    DRIVER {
         int id PK
-        int company_id FK
+        int company_id FK "null for independent"
         string name
         string email
         string phone
-        enum role "superadmin | admin | dispatcher | customer"
-        datetime created_at
-    }
-
-    DRIVER {
-        int id PK
-        int user_id FK
-        int company_id FK "null for independent"
+        string password_hash
         enum type "EMPLOYED | INDEPENDENT"
         enum status "AVAILABLE | BUSY | OFFLINE"
         enum verification_status "PENDING | VERIFIED | REJECTED"
@@ -330,8 +270,10 @@ erDiagram
         int driver_id FK
         float start_lat
         float start_lng
+        string start_address
         float end_lat
         float end_lng
+        string end_address
         datetime departure_time
         boolean is_active
         datetime created_at
@@ -359,7 +301,6 @@ erDiagram
     ORDER {
         int id PK
         int company_id FK
-        int customer_id FK
         string tracking_code
         enum status "UNASSIGNED | LISTED | ASSIGNED | PICKED_UP | EN_ROUTE | DELIVERED | CANCELLED"
         float listed_price
@@ -371,6 +312,9 @@ erDiagram
         float delivery_lng
         string delivery_address
         enum priority "LOW | NORMAL | HIGH | URGENT"
+        string recipient_name
+        string recipient_phone
+        string recipient_email
         string notes
         datetime created_at
     }
@@ -390,7 +334,7 @@ erDiagram
         int order_id FK
         int driver_id FK
         int vehicle_id FK
-        int assigned_by FK
+        int assigned_by_company_id FK
         enum source "DIRECT | BID"
         datetime estimated_arrival
         datetime created_at
@@ -424,6 +368,27 @@ erDiagram
         string notes
         string photo_url
     }
+
+    MESSAGE {
+        int id PK
+        int order_id FK
+        string channel "dispatcher-driver | dispatcher-recipient | driver-recipient"
+        string sender_role "dispatcher | driver | recipient"
+        string sender_name
+        text body
+        boolean is_read
+        datetime created_at
+    }
+
+    SUPERADMIN_SETTING {
+        int id PK
+        string admin_name
+        string admin_email
+        string theme "light | dark | system"
+        boolean email_reports
+        boolean auto_approve_drivers
+        datetime created_at
+    }
 ```
 
 ### 3.2 Indexing Strategy
@@ -437,14 +402,7 @@ erDiagram
 | `driver_routes` | `is_active, departure_time` | Composite | Active route matching |
 | `assignments` | `driver_id, created_at` | Composite | Driver assignment history |
 | `delivery_events` | `assignment_id` | Foreign Key | Audit trail lookup |
-
-### 3.3 Partitioning Strategy (Future)
-
-| Table | Strategy | Reason |
-|---|---|---|
-| `driver_location_logs` | Time-based partitioning (monthly) | High write volume, old data rarely queried |
-| `delivery_events` | Time-based partitioning (quarterly) | Audit log grows indefinitely |
-| `orders` | None (CE-01) | Moderate volume, needs full query flexibility |
+| `messages` | `order_id, channel` | Composite | Conversation lookup |
 
 ---
 
@@ -456,10 +414,9 @@ erDiagram
 classDiagram
     class AssignmentService {
         -sequelize: Sequelize
-        +assignOrder(orderId, driverId, vehicleId, dispatcherId): Assignment
-        +cancelAssignment(assignmentId): void
-        -validateOrderAvailability(orderId, transaction): Order
-        -validateDriverAvailability(driverId, transaction): Driver
+        +assignOrder(orderId, driverId, vehicleId, companyId, options): Assignment
+        -validateOrder(orderId, transaction): Order
+        -validateDriver(driverId, transaction): Driver
         -createAssignmentRecord(data, transaction): Assignment
         -emitAssignmentEvent(assignment): void
     }
@@ -468,7 +425,7 @@ classDiagram
         -sequelize: Sequelize
         +listOrder(orderId, price): Order
         +unlistOrder(orderId): Order
-        +placeBid(orderId, driverId, offeredPrice): Bid
+        +placeBid(orderId, driverId, offeredPrice, message): Bid
         +acceptBid(bidId): Assignment
         +rejectBid(bidId): Bid
         -rejectRemainingBids(orderId, acceptedBidId, transaction): void
@@ -480,6 +437,7 @@ classDiagram
         -io: SocketServer
         +recordPing(driverId, lat, lng, speed, heading): LocationLog
         +getLatestLocation(driverId): LocationLog
+        +getDriverLocations(companyId): LocationLog[]
         +broadcastLocation(driverId, location): void
         -shouldBroadcast(driver): boolean
         -getTargetRooms(driver): string[]
@@ -489,39 +447,33 @@ classDiagram
         +registerRoute(driverId, startLat, startLng, endLat, endLng, departureTime): DriverRoute
         +deactivateRoute(routeId): void
         +findDriversNearPath(pickupLat, pickupLng, deliveryLat, deliveryLng, radiusKm): Driver[]
+        +getMyRoutes(driverId): DriverRoute[]
+        +getActiveRoutes(): DriverRoute[]
         -calculateDistance(lat1, lng1, lat2, lng2): float
         -isAlongRoute(route, targetLat, targetLng, radiusKm): boolean
     }
 
     class HistoryService {
-        +getDispatcherHistory(companyId, filters): HistoryRecord[]
-        +getDriverHistory(driverId, filters): HistoryRecord[]
-        -projectFields(records, role): HistoryRecord[]
-        -applyDateFilters(query, dateRange): query
+        +getDispatcherHistory(companyId, filters): Records
+        +getDriverHistory(driverId, driverType, filters): Records
+        +getDeliveryDetail(assignmentId, role, driverId): Record
+        -_buildQuery(filters): QueryParams
     }
 
-    class TenantMiddleware {
-        +resolve(req, res, next): void
-        -extractCompanyId(req): int
-        -validateTenantAccess(userId, companyId): boolean
-    }
-
-    class DispatchSocket {
-        -io: SocketServer
-        +initialize(server): void
+    class SocketHandler {
+        +initializeSocket(io): void
         +handleConnection(socket): void
-        +joinRoom(socket, roomName): void
-        +emitToRoom(roomName, event, data): void
-        -authenticateSocket(socket): User
-        -resolveRooms(user): string[]
+        -joinCompany(companyId): void
+        -joinMarketplace(companyId): void
+        -joinDriver(driverId): void
+        -joinTracking(orderId): void
+        -joinMessages(orderId, channel): void
+        -handleLocationPing(data): void
     }
 
-    AssignmentService --> DispatchSocket : emits events
-    MarketplaceService --> DispatchSocket : emits events
-    LocationService --> DispatchSocket : broadcasts GPS
-    HistoryService --> TenantMiddleware : scoped queries
-    AssignmentService --> TenantMiddleware : scoped queries
-    MarketplaceService --> TenantMiddleware : scoped queries
+    AssignmentService --> SocketHandler : emits events
+    MarketplaceService --> SocketHandler : emits events
+    LocationService --> SocketHandler : broadcasts GPS
 ```
 
 ### 4.2 Error Handling Strategy
@@ -534,17 +486,6 @@ classDiagram
 | Concurrency Conflict | 409 | Return "Order already assigned" message |
 | Lock Timeout | 408 | Retry once, then return "Try again" |
 | Internal Server Error | 500 | Log full stack trace, return generic message |
-
-### 4.3 Input Validation Rules
-
-| Entity | Field | Rules |
-|---|---|---|
-| Order | `pickup_lat/lng` | Required, valid coordinate range (-90 to 90, -180 to 180) |
-| Order | `listed_price` | Required if listing, positive number, max 2 decimal places |
-| Bid | `offered_price` | Required, positive, must differ from listed_price |
-| GPS Ping | `lat/lng` | Required, valid coordinates |
-| GPS Ping | `speed` | Optional, non-negative |
-| DriverRoute | `departure_time` | Required, must be in the future |
 
 ---
 
@@ -566,37 +507,41 @@ graph TB
         UC9["Register Travel Route"]
         UC10["View Live Map"]
         UC11["Manage Companies"]
-        UC12["Verify Independent Driver"]
-        UC13["View Analytics"]
-        UC14["View Delivery History"]
+        UC12["View Analytics"]
+        UC13["View Delivery History"]
+        UC14["In-App Messaging"]
+        UC15["Manage Drivers"]
+        UC16["View Earnings"]
     end
 
     SuperAdmin(("SuperAdmin"))
-    Admin(("Admin"))
     Dispatcher(("Dispatcher"))
     EmployedDriver(("Employed Driver"))
     IndependentDriver(("Independent Driver"))
     Customer(("Customer"))
 
     SuperAdmin --> UC11
-    SuperAdmin --> UC13
-    Admin --> UC12
-    Admin --> UC13
+    SuperAdmin --> UC12
     Dispatcher --> UC1
     Dispatcher --> UC2
     Dispatcher --> UC3
     Dispatcher --> UC5
     Dispatcher --> UC10
+    Dispatcher --> UC12
     Dispatcher --> UC13
     Dispatcher --> UC14
+    Dispatcher --> UC15
     EmployedDriver --> UC6
     EmployedDriver --> UC7
+    EmployedDriver --> UC13
     EmployedDriver --> UC14
     IndependentDriver --> UC4
     IndependentDriver --> UC6
     IndependentDriver --> UC7
     IndependentDriver --> UC9
+    IndependentDriver --> UC13
     IndependentDriver --> UC14
+    IndependentDriver --> UC16
     Customer --> UC8
 ```
 
@@ -613,7 +558,7 @@ sequenceDiagram
 
     D->>API: POST /api/orders/:id/assign {driverId, vehicleId}
     API->>MW: Validate tenant scope
-    MW->>AS: assignOrder(orderId, driverId, vehicleId)
+    MW->>AS: assignOrder(orderId, driverId, vehicleId, companyId)
     AS->>DB: BEGIN TRANSACTION (SERIALIZABLE)
     AS->>DB: SELECT * FROM orders WHERE id=:id FOR UPDATE
     DB-->>AS: Order (status: UNASSIGNED)
@@ -650,17 +595,11 @@ sequenceDiagram
     WS-->>ID1: New listing available
     WS-->>ID2: New listing available
 
-    ID1->>API: POST /api/orders/55/bid {price: 12}
+    ID1->>API: POST /api/bids {orderId: 55, price: 12}
     API->>MS: placeBid(55, driverA, 12)
     MS->>DB: INSERT INTO bids
     MS->>WS: Emit "bid:new"
-    WS-->>Disp: New bid: $12 from Driver A
-
-    ID2->>API: POST /api/orders/55/bid {price: 14}
-    API->>MS: placeBid(55, driverB, 14)
-    MS->>DB: INSERT INTO bids
-    MS->>WS: Emit "bid:new"
-    WS-->>Disp: New bid: $14 from Driver B
+    WS-->>Disp: New bid from Driver A
 
     Disp->>API: PUT /api/bids/1/accept
     API->>MS: acceptBid(1)
@@ -686,10 +625,10 @@ sequenceDiagram
     participant LS as Location Service
     participant DB as MySQL
 
-    loop Every 3 seconds
+    loop Every 3 seconds (via useGeolocationPing hook)
         DR->>WSC: Browser Geolocation API
-        WSC->>WSS: Emit "location:update" {lat, lng, speed}
-        WSS->>LS: recordPing(driverId, lat, lng, speed)
+        WSC->>WSS: Emit "location:ping" {driverId, lat, lng, speed, heading}
+        WSS->>LS: recordPing(driverId, lat, lng, speed, heading)
         LS->>DB: INSERT INTO driver_location_logs
         LS->>LS: shouldBroadcast(driver)?
 
@@ -783,93 +722,104 @@ stateDiagram-v2
 
 ### 6.1 REST Endpoints
 
+#### Authentication
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/api/auth/login` | Login with email/password | Public |
+
 #### Companies
 | Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| POST | `/api/companies` | Register a new company | SuperAdmin |
-| GET | `/api/companies` | List all companies | SuperAdmin |
-| GET | `/api/companies/:id` | Get company details | Admin |
-| PUT | `/api/companies/:id` | Update company settings | Admin |
+| POST | `/api/companies` | Register a new company | Public (CE-02: Admin) |
+| GET | `/api/companies` | List all companies | Tenant-scoped |
+| GET | `/api/companies/:id` | Get company details | Tenant-scoped |
+| PUT | `/api/companies/:id` | Update company settings | Tenant-scoped |
 
 #### Orders
 | Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| POST | `/api/orders` | Create a new order | Dispatcher |
-| GET | `/api/orders` | List orders (scoped by company) | Dispatcher |
-| GET | `/api/orders/:id` | Get order details | Dispatcher |
-| PUT | `/api/orders/:id/list` | List order on marketplace | Dispatcher |
-| PUT | `/api/orders/:id/unlist` | Remove from marketplace | Dispatcher |
-| POST | `/api/orders/:id/assign` | Direct assign to employed driver | Dispatcher |
-| GET | `/api/orders/:id/bids` | Get all bids for an order | Dispatcher |
+| POST | `/api/orders` | Create a new order | Dispatcher (tenant-scoped) |
+| GET | `/api/orders` | List orders (company-scoped, supports `?for_driver=` filter) | Dispatcher / Driver (tenant-scoped) |
+| GET | `/api/orders/:id` | Get order details | Dispatcher (tenant-scoped) |
+| PUT | `/api/orders/:id/list` | List order on marketplace | Dispatcher (tenant-scoped) |
+| PUT | `/api/orders/:id/unlist` | Remove from marketplace | Dispatcher (tenant-scoped) |
+| POST | `/api/orders/:id/assign` | Direct assign to employed driver | Dispatcher (tenant-scoped) |
+| GET | `/api/orders/:id/bids` | Get all bids for an order | Dispatcher (tenant-scoped) |
+| PATCH | `/api/orders/:id/status` | Update order status (driver action) | Driver (tenant-scoped) |
 
 #### Bids
 | Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| POST | `/api/orders/:id/bid` | Place a bid | Independent Driver |
-| PUT | `/api/bids/:id/accept` | Accept a bid | Dispatcher |
-| PUT | `/api/bids/:id/reject` | Reject a bid | Dispatcher |
+| POST | `/api/bids` | Place a bid on a listed order | Independent Driver |
+| PUT | `/api/bids/:id/accept` | Accept a bid | Dispatcher (tenant-scoped) |
+| PUT | `/api/bids/:id/reject` | Reject a bid | Dispatcher (tenant-scoped) |
 
 #### Drivers
 | Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| GET | `/api/drivers` | List drivers (company-scoped) | Dispatcher |
+| POST | `/api/drivers/signup` | Register as independent driver | Public |
+| GET | `/api/drivers` | List drivers (company-scoped) | Dispatcher (tenant-scoped) |
+| POST | `/api/drivers` | Create an employed driver | Dispatcher (tenant-scoped) |
 | GET | `/api/drivers/:id` | Driver profile details | Dispatcher / Driver |
-| PUT | `/api/drivers/:id/verify` | Approve independent driver | Admin |
+| PUT | `/api/drivers/:id` | Update driver profile/settings | Driver |
+| PUT | `/api/drivers/:id/password` | Update driver password | Driver |
+| PUT | `/api/drivers/:id/vehicle` | Create/update driver's vehicle | Driver |
+| PUT | `/api/drivers/:id/verify` | Approve/reject independent driver | Admin |
+| PATCH | `/api/drivers/:id/status` | Update driver online/offline status | Driver |
 | POST | `/api/drivers/routes` | Pre-register a travel route | Independent Driver |
-| GET | `/api/drivers/routes/nearby` | Find drivers near a path | Dispatcher |
+| GET | `/api/drivers/routes/mine` | Get driver's own routes | Independent Driver |
+| GET | `/api/drivers/routes/active` | Get all active routes (for dispatchers) | Dispatcher |
+| GET | `/api/drivers/routes/nearby` | Find drivers near a delivery path | Dispatcher |
+| DELETE | `/api/drivers/routes/:routeId` | Deactivate a route | Independent Driver |
 
 #### Location & Tracking
 | Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| POST | `/api/location/ping` | Submit GPS coordinates | Driver |
-| GET | `/api/track/:trackingCode` | Public tracking data | None (public) |
+| POST | `/api/location/ping` | Submit GPS coordinates (rate limited) | Driver |
+| GET | `/api/location/drivers` | Get latest location for all company drivers | Dispatcher |
+| GET | `/api/location/track/:trackingCode` | Public tracking data | None (public) |
+
+#### Dashboard
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/api/dashboard/stats` | Company-scoped order stats aggregation | Dispatcher (tenant-scoped) |
+| GET | `/api/dashboard/user` | Current company profile info | Dispatcher (tenant-scoped) |
+| GET | `/api/dashboard/marketplace-listings` | All LISTED orders (cross-tenant) | Independent Driver |
+| GET | `/api/dashboard/driver-stats` | Aggregated driver stats (active, completed, rating) | Driver |
+| GET | `/api/dashboard/driver-bids` | All bids placed by a driver with order details | Independent Driver |
 
 #### Delivery History
 | Method | Endpoint | Description | Auth |
-|---|---|---|
+|---|---|---|---|
 | GET | `/api/history` | Get delivery history (role-scoped projection) | Dispatcher / Driver |
 | GET | `/api/history/:assignmentId` | Get single delivery details (role-scoped) | Dispatcher / Driver |
 
-### 6.2 GraphQL Schema
+#### Messages
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/api/messages/conversations` | List conversations (role-filtered) | Dispatcher / Driver |
+| GET | `/api/messages/:orderId/:channel` | Get messages for an order channel | Dispatcher / Driver / Recipient |
+| POST | `/api/messages/:orderId/:channel` | Send a message | Dispatcher / Driver / Recipient |
+| PUT | `/api/messages/:orderId/:channel/read` | Mark messages as read | Dispatcher / Driver / Recipient |
 
-```graphql
-type Query {
-  # Dispatcher Dashboard (uses DataLoader)
-  dispatcherDashboard(companyId: ID!): DashboardData!
-  
-  # Marketplace
-  marketplaceListings(filters: ListingFilters): [Order!]!
-  orderBids(orderId: ID!): [Bid!]!
-  
-  # Route Matching
-  availableRouteDrivers(pickupLat: Float!, pickupLng: Float!, deliveryLat: Float!, deliveryLng: Float!, radiusKm: Float): [Driver!]!
-  
-  # Analytics
-  companyAnalytics(companyId: ID!, dateRange: DateRange): Analytics!
-  driverLeaderboard(companyId: ID!, limit: Int): [DriverStats!]!
-  
-  # Delivery History (role-scoped)
-  deliveryHistory(filters: HistoryFilters): [HistoryRecord!]!
-}
+#### SuperAdmin
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/api/superadmin/stats` | Platform-wide KPIs | SuperAdmin |
+| GET | `/api/superadmin/companies` | All companies with counts | SuperAdmin |
+| GET | `/api/superadmin/drivers` | All drivers across platform | SuperAdmin |
+| GET | `/api/superadmin/orders` | All orders across platform | SuperAdmin |
+| GET | `/api/superadmin/settings` | SuperAdmin preferences | SuperAdmin |
+| PUT | `/api/superadmin/settings` | Update SuperAdmin preferences | SuperAdmin |
 
-type DashboardData {
-  activeDrivers: [Driver!]!
-  pendingOrders: [Order!]!
-  activeAssignments: [Assignment!]!
-  stats: DashboardStats!
-}
+#### Health
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/api/health` | Health check with DB status | None |
 
-type DashboardStats {
-  totalDeliveriesToday: Int!
-  avgDeliveryTime: Float!
-  successRate: Float!
-  activeDriverCount: Int!
-}
-```
+### 6.2 Delivery History — Role-Based Field Projection
 
-### 6.3 Delivery History — Role-Based Field Projection
-
-The same `deliveryHistory` endpoint returns different fields based on the caller's role:
+The same `/api/history` endpoint returns different fields based on the caller's role:
 
 | Field | Dispatcher | Employed Driver | Independent Driver |
 |---|---|---|---|
@@ -877,22 +827,23 @@ The same `deliveryHistory` endpoint returns different fields based on the caller
 | Tracking Code | Yes | Yes | Yes |
 | Pickup Address | Yes | Yes | Yes |
 | Delivery Address | Yes | Yes | Yes |
-| Customer Name | Yes | No | No |
-| Customer Phone | Yes | No | No |
-| Listed Price | Yes | No | Yes (their earnings) |
-| Accepted Bid Price | Yes | No | Yes |
+| Recipient Name/Phone/Email | Yes | Yes | Yes |
+| Listed Price | Yes | No | Yes (for earnings) |
+| Accepted Bid Price | Yes (via bids) | No | Yes (via bids) |
+| Weight | Yes | No | Yes |
+| Priority | Yes | No | Yes |
+| Notes | Yes | No | Yes |
 | Driver Name | Yes | N/A (own record) | N/A (own record) |
 | Vehicle Info | Yes | Yes | No |
+| Company Name | Yes | No | Yes |
 | All Delivery Events | Yes | Yes (own) | Yes (own) |
-| Timestamps (created, delivered) | Yes | Yes | Yes |
-| Priority | Yes | No | No |
-| Notes | Yes | No | No |
+| Timestamps | Yes | Yes | Yes |
 
-### 6.4 WebSocket Events
+### 6.3 WebSocket Events
 
 | Event | Direction | Room | Payload |
 |---|---|---|---|
-| `location:update` | Client → Server | — | `{lat, lng, speed, heading}` |
+| `location:ping` | Client → Server | — | `{driverId, lat, lng, speed, heading}` |
 | `driver:location` | Server → Client | `company:{id}:dispatchers` | `{driverId, lat, lng, speed}` |
 | `order:listed` | Server → Client | `company:{id}:marketplace` | `{orderId, price, pickup, delivery}` |
 | `bid:new` | Server → Client | `company:{id}:marketplace` | `{bidId, orderId, driverId, price}` |
@@ -902,47 +853,47 @@ The same `deliveryHistory` endpoint returns different fields based on the caller
 | `assignment:new` | Server → Client | `driver:{id}` | `{assignment, order details}` |
 | `order:status` | Server → Client | `order:{id}:tracking` | `{orderId, status, timestamp}` |
 | `driver:tracking` | Server → Client | `order:{id}:tracking` | `{lat, lng, estimatedArrival}` |
+| `message:new` | Server → Client | `order:{id}:chat:{channel}` | `{message object}` |
+| `join:company` | Client → Server | — | `{companyId}` |
+| `join:marketplace` | Client → Server | — | `{companyId}` |
+| `join:driver` | Client → Server | — | `{driverId}` |
+| `join:tracking` | Client → Server | — | `{orderId}` |
+| `join:messages` | Client → Server | — | `{orderId, channel}` |
+| `leave:room` | Client → Server | — | `{room}` |
 
 ---
 
 ## 7. Scalability, Performance & Security
 
-### 7.1 Caching Strategy (CE-02)
-
-| Data | Cache | TTL | Invalidation |
-|---|---|---|---|
-| Company settings | Redis | 1 hour | On update |
-| Driver latest location | Redis | 10 seconds | On every GPS ping |
-| Marketplace listings | Redis | 30 seconds | On list/unlist/accept |
-| GraphQL dashboard | Application-level (DataLoader) | Per-request | Automatic |
-
-### 7.2 Security Measures
+### 7.1 Security Measures
 
 | Layer | Measure | Implementation |
 |---|---|---|
 | Transport | HTTPS/TLS | SSL certificates |
-| Authentication | JWT tokens (CE-02) | Role-encoded, company-scoped |
+| Authentication | Header-based identity (CE-02: JWT) | `x-company-id`, `x-driver-id`, `x-user-role` headers |
 | Authorization | Tenant middleware | Every request verified against company_id |
 | Input | Validation & sanitization | Express-validator on all endpoints |
 | Database | Parameterized queries | Sequelize ORM (prevents SQL injection) |
-| Rate Limiting | Per-IP and per-user limits | Express-rate-limit |
-| WebSocket | Token-based handshake | Verify identity on connection |
+| Rate Limiting | Per-IP and per-endpoint limits | Express-rate-limit (100/15min API, 20/min GPS) |
+| Security Headers | Helmet.js | XSS, clickjack, MIME-sniff protection |
+| WebSocket | Identity-based room joining | Room membership via socket events |
 
-### 7.3 Performance Optimizations
+### 7.2 Performance Optimizations
 
 | Optimization | Where | Impact |
 |---|---|---|
-| DataLoader batching | GraphQL resolvers | Eliminates N+1 queries |
-| GPS ping debouncing | Client-side | Reduces write volume by 60% |
+| GPS ping debouncing | Client-side (useGeolocationPing hook) | Reduces write volume |
 | Composite indexes | MySQL | Sub-10ms query times on filtered lookups |
-| Connection pooling | Sequelize | Reuse DB connections under load |
+| Connection pooling | Sequelize (min: 2, max: 10) | Reuse DB connections under load |
 | WebSocket rooms | Socket.io | Only send data to relevant clients |
+| Auto-refresh polling | Driver dashboards (30s interval) | Keeps data in sync without manual refresh |
+| Pessimistic locking | Assignment Service (SERIALIZABLE) | Zero double-assignments |
 
 ---
 
 ## 8. Deployment & Maintenance
 
-### 8.1 Deployment Architecture (CE-02)
+### 8.1 Deployment Architecture
 
 ```mermaid
 graph LR
@@ -962,55 +913,44 @@ graph LR
 
     subgraph Database
         MY["MySQL (Render / PlanetScale)"]
-        RD["Redis (CE-02)"]
     end
 
     B --> CDN --> REACT
     REACT -->|"API calls"| APP
     REACT -->|"WebSocket"| WSS
     APP --> MY
-    APP --> RD
 ```
 
 ### 8.2 Monitoring & Logging
 
-| Tool | Purpose | Phase |
+| Tool | Purpose | Status |
 |---|---|---|
-| Morgan | HTTP request logging | CE-01 |
-| Winston | Structured application logging | CE-01 |
-| Prometheus + Grafana | Metrics dashboard | CE-02 |
-| Sentry | Error tracking | CE-02 |
-
-### 8.3 CI/CD Pipeline (CE-02)
-
-```mermaid
-graph LR
-    A["Git Push"] --> B["GitHub Actions"]
-    B --> C["Lint + Type Check"]
-    C --> D["Unit Tests"]
-    D --> E["Integration Tests"]
-    E --> F["Build"]
-    F --> G["Deploy to Staging"]
-    G --> H["Smoke Tests"]
-    H --> I["Deploy to Production"]
-```
+| Morgan | HTTP request logging | ✅ Implemented |
+| Winston | Structured application logging | ✅ Implemented |
+| Prometheus + Grafana | Metrics dashboard | 🔮 CE-02 |
+| Sentry | Error tracking | 🔮 CE-02 |
 
 ---
 
 ## Technology Stack Summary
 
-| Component | Technology | Purpose |
-|---|---|---|
-| Frontend | React + Vite | UI layer |
-| State | Redux Toolkit | Global client state (auth, context, active orders) |
-| Styling | CSS Custom Properties | Theme system (light/dark) |
-| Maps | MapLibre GL JS + react-map-gl | WebGL-powered real-time fleet tracking |
-| Tiles | MapTiler (free tier) / OpenFreeMap | Vector tile hosting |
-| Backend | Node.js + Express | API and business logic |
-| GraphQL | Apollo Server | Complex analytics queries |
-| WebSockets | Socket.io | Real-time bidirectional events |
-| ORM | Sequelize | Database abstraction and migrations |
-| Database | MySQL | Relational data with ACID transactions |
-| Cache | Redis (CE-02) | Session and location caching |
-| Frontend Deploy | Vercel | Edge CDN, instant deploys, free tier |
-| Backend Deploy | Render | WebSocket support, managed services, free tier |
+| Component | Technology | Version | Purpose |
+|---|---|---|---|
+| Frontend | React + Vite | React 19, Vite 7 | UI layer |
+| Language | TypeScript | 5.9 | Type-safe frontend code |
+| Styling | Tailwind CSS | v4 | Utility-first CSS framework |
+| Animations | Framer Motion | 12.x | Page transitions and micro-animations |
+| Icons | Lucide React | 0.575 | Icon system |
+| UI Primitives | Radix UI | 1.x | Accessible component primitives |
+| Maps | MapLibre GL JS + react-map-gl | MapLibre 5.19, react-map-gl 8.1 | WebGL-powered real-time fleet tracking |
+| Routing | React Router DOM | v7 | Client-side routing |
+| Real-Time (Client) | Socket.io Client | 4.8 | WebSocket communication |
+| Backend | Node.js + Express | Express 4.22 | API and business logic |
+| Real-Time (Server) | Socket.io | 4.8 | WebSocket rooms and events |
+| ORM | Sequelize | 6.37 | Database abstraction and migrations |
+| Database | MySQL | via mysql2 3.18 | Relational data with ACID transactions |
+| Validation | Express-Validator + Joi | — | Request validation + env validation |
+| Security | Helmet | 8.1 | HTTP security headers |
+| Logging | Winston + Morgan | — | Structured logging |
+| Frontend Deploy | Vercel | — | Edge CDN, instant deploys |
+| Backend Deploy | Render | — | WebSocket support, managed services |

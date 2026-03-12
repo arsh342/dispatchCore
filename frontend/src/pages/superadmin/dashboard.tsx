@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { SuperAdminSidebar } from "@/components/dashboard/superadmin-sidebar";
 import { useTheme } from "@/hooks/useTheme";
 import {
@@ -15,13 +16,11 @@ import {
   Package,
   Truck,
   CheckCircle2,
-  Users,
   TrendingUp,
   ShoppingBag,
   AlertCircle,
   ExternalLink,
   Search,
-  Bell,
   Shield,
 } from "lucide-react";
 import LoadingPackage from "@/components/ui/loading-package";
@@ -39,6 +38,7 @@ const planColors: Record<string, string> = {
 };
 
 export default function SuperAdminDashboardPage() {
+  const navigate = useNavigate();
   const { isDark, setIsDark } = useTheme();
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [companies, setCompanies] = useState<CompanySummary[]>([]);
@@ -70,6 +70,17 @@ export default function SuperAdminDashboardPage() {
       c.planType.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
+  const formatDate = (value: string | null | undefined) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
   return (
     <div className="flex min-h-screen w-full">
       <SuperAdminSidebar isDark={isDark} setIsDark={setIsDark} />
@@ -87,19 +98,7 @@ export default function SuperAdminDashboardPage() {
                 Manage all companies and monitor platform health.
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-card border border-border rounded-full px-3 py-2">
-                <Search className="h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="bg-transparent outline-none text-sm w-32 text-secondary-foreground placeholder:text-gray-400"
-                />
-              </div>
-              <button className="relative p-2.5 rounded-full hover:bg-secondary transition-colors">
-                <Bell className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
+            <div />
           </div>
         </header>
 
@@ -222,7 +221,7 @@ export default function SuperAdminDashboardPage() {
                       <div className="col-span-2">Plan</div>
                       <div className="col-span-1 text-center">Orders</div>
                       <div className="col-span-1 text-center">Drivers</div>
-                      <div className="col-span-1 text-center">Users</div>
+                      <div className="col-span-1 text-center">Location</div>
                       <div className="col-span-2">Created</div>
                       <div className="col-span-1 text-right">Actions</div>
                     </div>
@@ -274,27 +273,25 @@ export default function SuperAdminDashboardPage() {
 
                         <div className="col-span-1 text-center">
                           <span className="text-sm font-medium text-foreground">
-                            {company.userCount}
+                            {company.location ?? company.address ?? "—"}
                           </span>
                         </div>
 
                         <div className="col-span-2">
                           <span className="text-xs text-gray-400">
-                            {new Date(company.createdAt).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              },
-                            )}
+                            {formatDate(company.createdAt)}
                           </span>
                         </div>
 
                         <div className="col-span-1 text-right">
                           <button
+                            onClick={() =>
+                              navigate(
+                                `/superadmin/drivers?company=${encodeURIComponent(company.name)}`,
+                              )
+                            }
                             className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            title="View company"
+                            title="View company drivers"
                           >
                             <ExternalLink className="h-4 w-4 text-gray-400" />
                           </button>
@@ -377,24 +374,33 @@ export default function SuperAdminDashboardPage() {
                     Quick Actions
                   </h3>
                   <div className="space-y-2">
-                    <button className="w-full flex items-center gap-2.5 p-2.5 rounded-full bg-muted hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left">
+                    <a
+                      href="/superadmin/companies"
+                      className="w-full flex items-center gap-2.5 p-2.5 rounded-full bg-muted hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    >
                       <Building2 className="h-4 w-4 text-primary" />
                       <span className="text-sm text-secondary-foreground">
                         Register New Company
                       </span>
-                    </button>
-                    <button className="w-full flex items-center gap-2.5 p-2.5 rounded-full bg-muted hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left">
-                      <Users className="h-4 w-4 text-stone-600" />
+                    </a>
+                    <a
+                      href="/superadmin/drivers"
+                      className="w-full flex items-center gap-2.5 p-2.5 rounded-full bg-muted hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    >
+                      <Truck className="h-4 w-4 text-stone-600" />
                       <span className="text-sm text-secondary-foreground">
-                        Manage Platform Users
+                        Review Drivers
                       </span>
-                    </button>
-                    <button className="w-full flex items-center gap-2.5 p-2.5 rounded-full bg-muted hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left">
+                    </a>
+                    <a
+                      href="/superadmin/analytics"
+                      className="w-full flex items-center gap-2.5 p-2.5 rounded-full bg-muted hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    >
                       <TrendingUp className="h-4 w-4 text-stone-600" />
                       <span className="text-sm text-secondary-foreground">
                         View Analytics
                       </span>
-                    </button>
+                    </a>
                   </div>
                 </div>
               </div>

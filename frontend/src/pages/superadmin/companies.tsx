@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { SuperAdminSidebar } from "@/components/dashboard/superadmin-sidebar";
 import { useTheme } from "@/hooks/useTheme";
 import {
@@ -16,10 +17,9 @@ import {
   AlertCircle,
   Package,
   Truck,
-  Users,
   MapPin,
   X,
-  Bell,
+  ChevronDown,
 } from "lucide-react";
 import LoadingPackage from "@/components/ui/loading-package";
 import {
@@ -36,6 +36,7 @@ const planColors: Record<string, string> = {
 };
 
 export default function SuperAdminCompaniesPage() {
+  const navigate = useNavigate();
   const { isDark, setIsDark } = useTheme();
   const [companies, setCompanies] = useState<CompanySummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +48,9 @@ export default function SuperAdminCompaniesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({
     name: "",
+    email: "",
+    password: "",
+    location: "",
     address: "",
     plan_type: "STARTER",
   });
@@ -71,18 +75,32 @@ export default function SuperAdminCompaniesPage() {
   const filtered = companies.filter((c) => {
     const matchesSearch =
       c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (c.address ?? "").toLowerCase().includes(searchTerm.toLowerCase());
+      (c.location ?? c.address ?? "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPlan = planFilter === "ALL" || c.planType === planFilter;
     return matchesSearch && matchesPlan;
   });
 
   const totalOrders = companies.reduce((s, c) => s + c.orderCount, 0);
   const totalDrivers = companies.reduce((s, c) => s + c.driverCount, 0);
-  const totalUsers = companies.reduce((s, c) => s + c.userCount, 0);
+
+  const formatDate = (value: string | null | undefined) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
 
   const handleCreate = async () => {
     if (!createForm.name.trim()) {
       setCreateError("Company name is required.");
+      return;
+    }
+    if (!createForm.email.trim() || !createForm.password.trim() || !createForm.location.trim()) {
+      setCreateError("Email, password, and location are required.");
       return;
     }
     setCreating(true);
@@ -97,7 +115,14 @@ export default function SuperAdminCompaniesPage() {
       if (!res.ok || !body.success)
         throw new Error(body.error?.message ?? "Failed to create company");
       setShowCreate(false);
-      setCreateForm({ name: "", address: "", plan_type: "FREE" });
+      setCreateForm({
+        name: "",
+        email: "",
+        password: "",
+        location: "",
+        address: "",
+        plan_type: "STARTER",
+      });
       await loadCompanies();
     } catch (err) {
       setCreateError((err as Error).message);
@@ -131,9 +156,6 @@ export default function SuperAdminCompaniesPage() {
                 <Plus className="h-4 w-4" />
                 Register Company
               </button>
-              <button className="relative p-2.5 rounded-full hover:bg-secondary transition-colors">
-                <Bell className="h-5 w-5 text-gray-500" />
-              </button>
             </div>
           </div>
         </header>
@@ -164,9 +186,9 @@ export default function SuperAdminCompaniesPage() {
                 bg: "bg-stone-100 dark:bg-stone-800/20",
               },
               {
-                label: "Total Users",
-                value: totalUsers,
-                icon: Users,
+                label: "Tracked Locations",
+                value: companies.filter((c) => !!(c.location ?? c.address)).length,
+                icon: MapPin,
                 color: "text-stone-600",
                 bg: "bg-stone-100 dark:bg-stone-800/20",
               },
@@ -244,9 +266,9 @@ export default function SuperAdminCompaniesPage() {
                 <div className="col-span-1">Plan</div>
                 <div className="col-span-1 text-center">Orders</div>
                 <div className="col-span-1 text-center">Drivers</div>
-                <div className="col-span-1 text-center">Users</div>
-                <div className="col-span-2">Registered</div>
                 <div className="col-span-1 text-center">Status</div>
+                <div className="col-span-2">Registered</div>
+                <div className="col-span-1 text-center">Actions</div>
               </div>
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {filtered.map((c) => (
@@ -272,12 +294,12 @@ export default function SuperAdminCompaniesPage() {
                     <div className="col-span-2 flex items-center gap-1.5">
                       <MapPin className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                       <span className="text-sm text-gray-500 truncate">
-                        {c.address || "—"}
+                        {c.location || c.address || "—"}
                       </span>
                     </div>
                     <div className="col-span-1">
                       <span
-                        className={`text-xs font-medium px-2.5 py-1 rounded-full ${planColors[c.planType] ?? planColors.FREE}`}
+                        className={`text-xs font-medium px-2.5 py-1 rounded-full ${planColors[c.planType] ?? planColors.STARTER}`}
                       >
                         {c.planType}
                       </span>
@@ -293,24 +315,25 @@ export default function SuperAdminCompaniesPage() {
                       </span>
                     </div>
                     <div className="col-span-1 text-center">
-                      <span className="text-sm font-medium text-foreground">
-                        {c.userCount}
-                      </span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-xs text-gray-400">
-                        {new Date(c.createdAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </span>
-                    </div>
-                    <div className="col-span-1 text-center">
                       <span className="flex items-center justify-center gap-1.5 text-xs font-medium text-green-600">
                         <span className="h-2 w-2 rounded-full bg-green-500" />
                         Active
                       </span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-xs text-gray-400">{formatDate(c.createdAt)}</span>
+                    </div>
+                    <div className="col-span-1 text-center">
+                      <button
+                        onClick={() =>
+                          navigate(
+                            `/superadmin/drivers?company=${encodeURIComponent(c.name)}`,
+                          )
+                        }
+                        className="text-xs font-medium text-primary hover:underline"
+                      >
+                        View Drivers
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -353,6 +376,48 @@ export default function SuperAdminCompaniesPage() {
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-secondary-foreground">
+                  Company Email *
+                </label>
+                <input
+                  type="email"
+                  value={createForm.email}
+                  onChange={(e) =>
+                    setCreateForm((p) => ({ ...p, email: e.target.value }))
+                  }
+                  placeholder="ops@acme.com"
+                  className="w-full px-4 py-2.5 rounded-full border border-border bg-card text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-secondary-foreground">
+                  Password *
+                </label>
+                <input
+                  type="password"
+                  value={createForm.password}
+                  onChange={(e) =>
+                    setCreateForm((p) => ({ ...p, password: e.target.value }))
+                  }
+                  placeholder="At least 6 characters"
+                  className="w-full px-4 py-2.5 rounded-full border border-border bg-card text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-secondary-foreground">
+                  Location *
+                </label>
+                <input
+                  type="text"
+                  value={createForm.location}
+                  onChange={(e) =>
+                    setCreateForm((p) => ({ ...p, location: e.target.value }))
+                  }
+                  placeholder="San Francisco, CA"
+                  className="w-full px-4 py-2.5 rounded-full border border-border bg-card text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-secondary-foreground">
                   Address
                 </label>
                 <input
@@ -369,17 +434,20 @@ export default function SuperAdminCompaniesPage() {
                 <label className="text-sm font-medium text-secondary-foreground">
                   Plan
                 </label>
+                <div className="relative">
                 <select
                   value={createForm.plan_type}
                   onChange={(e) =>
                     setCreateForm((p) => ({ ...p, plan_type: e.target.value }))
                   }
-                  className="w-full px-4 py-2.5 rounded-full border border-border bg-card text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+                  className="w-full appearance-none px-4 pe-12 py-2.5 rounded-full border border-border bg-card text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
                 >
                   <option value="STARTER">Starter</option>
                   <option value="GROWTH">Growth</option>
                   <option value="ENTERPRISE">Enterprise</option>
                 </select>
+                <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                </div>
               </div>
               {createError && (
                 <div className="rounded-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-2.5 text-sm text-red-600">

@@ -25,11 +25,6 @@ module.exports = (sequelize) => {
         allowNull: false,
         references: { model: 'companies', key: 'id' },
       },
-      customer_id: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        references: { model: 'users', key: 'id' },
-      },
       tracking_code: {
         type: DataTypes.STRING(36),
         allowNull: false,
@@ -114,7 +109,6 @@ module.exports = (sequelize) => {
       indexes: [
         { fields: ['company_id', 'status'], name: 'idx_orders_company_status' },
         { fields: ['tracking_code'], unique: true, name: 'idx_orders_tracking_code' },
-        { fields: ['customer_id'] },
         { fields: ['status'] },
       ],
     },
@@ -122,7 +116,6 @@ module.exports = (sequelize) => {
 
   Order.associate = (models) => {
     Order.belongsTo(models.Company, { foreignKey: 'company_id', as: 'company' });
-    Order.belongsTo(models.User, { foreignKey: 'customer_id', as: 'customer' });
     Order.hasMany(models.Bid, { foreignKey: 'order_id', as: 'bids' });
     Order.hasOne(models.Assignment, { foreignKey: 'order_id', as: 'assignment' });
   };

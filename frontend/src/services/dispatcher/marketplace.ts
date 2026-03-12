@@ -12,19 +12,39 @@ import type {
 } from "@/types/dispatcher/marketplace";
 import { get, put } from "@/lib/api";
 
+/* ─── Haversine distance (km) between two lat/lng points ─── */
+function haversineKm(
+  lat1: number, lng1: number,
+  lat2: number, lng2: number,
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 // ── Backend response shapes ──
 
 interface BackendOrder {
   id: number;
   tracking_code: string;
   pickup_address: string | null;
+  pickup_lat: string | null;
+  pickup_lng: string | null;
   delivery_address: string | null;
+  delivery_lat: string | null;
+  delivery_lng: string | null;
   listed_price: string | null;
   weight_kg: string | null;
   priority: string;
   status: string;
   created_at: string;
-  customer_id: number | null;
+  recipient_name?: string | null;
   bids?: Array<{ id: number }>;
 }
 
@@ -36,11 +56,27 @@ interface BackendBid {
   status: string;
   message: string | null;
   created_at: string;
+  driver?: {
+    id: number;
+    name: string;
+    email?: string;
+    phone?: string;
+    type?: string;
+  };
 }
 
 // ── Transforms ──
 
 function orderToMarketplaceOrder(o: BackendOrder): MarketplaceOrder {
+  let distance = 0;
+  if (o.pickup_lat && o.pickup_lng && o.delivery_lat && o.delivery_lng) {
+    distance = Math.round(
+      haversineKm(
+        parseFloat(o.pickup_lat), parseFloat(o.pickup_lng),
+        parseFloat(o.delivery_lat), parseFloat(o.delivery_lng),
+      ) * 10
+    ) / 10;
+  }
   return {
     id: `ORD-${o.id}`,
     trackingCode: o.tracking_code,
@@ -48,27 +84,32 @@ function orderToMarketplaceOrder(o: BackendOrder): MarketplaceOrder {
     deliveryAddress: o.delivery_address ?? "—",
     listedPrice: o.listed_price ? parseFloat(o.listed_price) : 0,
     weight: o.weight_kg ? parseFloat(o.weight_kg) : 0,
-    distance: 0, // CE-03: Compute from coordinates
+    distance,
     priority: o.priority.toLowerCase() as MarketplaceOrder["priority"],
     status: o.status as MarketplaceOrder["status"],
     postedAt: o.created_at,
     bidsCount: o.bids ? o.bids.length : 0,
-    customerName: `Customer #${o.customer_id ?? "—"}`,
+    customerName: o.recipient_name ?? "Recipient",
     _backendId: o.id,
   };
 }
 
 function bidToFrontend(b: BackendBid, listedPrice: number): Bid {
   const now = Date.now();
-  const created = new Date(b.created_at).getTime();
-  const diffMin = Math.round((now - created) / 60000);
-  const timestamp =
-    diffMin < 60 ? `${diffMin} min ago` : `${Math.round(diffMin / 60)} hr ago`;
+  const created = b.created_at ? new Date(b.created_at).getTime() : NaN;
+  let timestamp: string;
+  if (isNaN(created)) {
+    timestamp = "Just now";
+  } else {
+    const diffMin = Math.round((now - created) / 60000);
+    timestamp =
+      diffMin < 1 ? "Just now" : diffMin < 60 ? `${diffMin} min ago` : `${Math.round(diffMin / 60)} hr ago`;
+  }
 
   return {
     id: `BID-${b.id}`,
     orderId: `ORD-${b.order_id}`,
-    driverName: `Driver #${b.driver_id}`,
+    driverName: b.driver?.name ?? `Driver #${b.driver_id}`,
     driverRating: 4.5, // CE-03: Fetch from driver profile
     driverDeliveries: 0,
     offeredPrice: parseFloat(b.offered_price),

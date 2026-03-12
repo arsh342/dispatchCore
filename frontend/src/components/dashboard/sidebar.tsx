@@ -7,11 +7,8 @@ import {
   MessageSquare,
   BarChart3,
   ChevronsRight,
-  Moon,
-  Sun,
   Gavel,
   Users,
-  Settings,
   Route,
   LogOut,
 } from "lucide-react";
@@ -32,10 +29,12 @@ const navItems = [
   { icon: Map, label: "Map Overview", href: "/dashboard/map" },
   { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics" },
   { icon: MessageSquare, label: "Messages", href: "/dashboard/messages" },
-  { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ];
 
-export function DashboardSidebar({ isDark, setIsDark }: SidebarProps) {
+export function DashboardSidebar({
+  isDark: _isDark,
+  setIsDark: _setIsDark,
+}: SidebarProps) {
   const [open, setOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
@@ -115,7 +114,7 @@ export function DashboardSidebar({ isDark, setIsDark }: SidebarProps) {
               <p className="text-sm font-medium text-foreground truncate">
                 {companyName}
               </p>
-              <p className="text-xs text-gray-400 truncate">Company Admin</p>
+              <p className="text-xs text-gray-400 truncate">Company</p>
             </div>
           )}
         </Link>
@@ -133,33 +132,6 @@ export function DashboardSidebar({ isDark, setIsDark }: SidebarProps) {
           )}
         </button>
 
-        {/* Dark mode toggle */}
-        <div
-          className={`flex items-center ${open ? "gap-1 bg-secondary rounded-full p-1" : "flex-col gap-1"}`}
-        >
-          <button
-            onClick={() => setIsDark(false)}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-medium transition-colors ${
-              !isDark
-                ? "bg-white dark:bg-gray-700 shadow-sm text-foreground"
-                : "text-muted-foreground"
-            }`}
-          >
-            <Sun className="h-3.5 w-3.5" />
-            {open && "Light"}
-          </button>
-          <button
-            onClick={() => setIsDark(true)}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-medium transition-colors ${
-              isDark
-                ? "bg-white dark:bg-accent shadow-sm text-foreground"
-                : "text-muted-foreground"
-            }`}
-          >
-            <Moon className="h-3.5 w-3.5" />
-            {open && "Dark"}
-          </button>
-        </div>
       </div>
 
       {/* Collapse toggle */}

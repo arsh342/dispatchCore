@@ -42,7 +42,8 @@ export default function DriverDeliveriesPage() {
     async function load() {
       setLoading(true);
       const data = await fetchActiveDeliveries();
-      setDeliveries(data);
+      // Active Deliveries page only shows orders already picked up (not ASSIGNED)
+      setDeliveries(data.filter(d => d.status !== "ASSIGNED"));
       setLoading(false);
     }
     load();
@@ -140,7 +141,7 @@ export default function DriverDeliveriesPage() {
 
                     <div className="flex items-center justify-between mt-2 text-xs text-gray-400">
                       <span>
-                        <Box className="inline-block h-3 w-3 text-primary" /> {del.weight} · 📏 {del.distance}
+                        <Box className="inline-block h-3 w-3 text-primary" /> {del.weight} · {del.distance}
                       </span>
                       <span className="flex items-center gap-1">
                         <Timer className="h-3 w-3" /> ETA {del.estimatedTime}
@@ -216,7 +217,7 @@ export default function DriverDeliveriesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 rounded-full bg-muted/50">
                   <p className="text-[10px] uppercase text-gray-400 mb-1">
-                    👤 Customer
+                    Customer
                   </p>
                   <p className="text-sm font-medium text-foreground">
                     {selected.customerName}
@@ -224,7 +225,7 @@ export default function DriverDeliveriesPage() {
                 </div>
                 <div className="p-3 rounded-full bg-muted/50">
                   <p className="text-[10px] uppercase text-gray-400 mb-1">
-                    💰 Payment
+                    Payment
                   </p>
                   <p className="text-xl font-bold text-green-600">
                     {selected.payment}

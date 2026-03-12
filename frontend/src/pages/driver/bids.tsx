@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import LoadingPackage from "@/components/ui/loading-package";
 import { fetchMyBids, type DriverBid } from "@/services/driver/marketplace";
+import { formatINR } from "@/lib/currency";
 
 /* ─── Types ─── */
 type BidStatus = "pending" | "accepted" | "rejected" | "expired";
@@ -88,7 +89,7 @@ export default function DriverBidsPage() {
               <button
                 key={s}
                 onClick={() => setFilter(s)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === s ? "bg-primary/10 text-primary" : "text-gray-500 hover:bg-secondary"}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-3xl text-xs font-medium transition-colors ${filter === s ? "bg-primary/10 text-primary" : "text-gray-500 hover:bg-secondary"}`}
               >
                 {s === "all" ? "All" : statusConfig[s].label}
                 <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded-full">
@@ -146,7 +147,7 @@ export default function DriverBidsPage() {
                         Your Offer
                       </p>
                       <p className="text-lg font-bold text-foreground">
-                        ${bid.offeredPrice.toFixed(2)}
+                        {formatINR(bid.offeredPrice)}
                       </p>
                     </div>
                     <div className="text-xs text-gray-300">vs</div>
@@ -155,13 +156,13 @@ export default function DriverBidsPage() {
                         Listed
                       </p>
                       <p className="text-lg font-semibold text-gray-400">
-                        ${bid.listedPrice.toFixed(2)}
+                        {formatINR(bid.listedPrice)}
                       </p>
                     </div>
                     {savings > 0 && (
                       <div className="ml-auto">
                         <span className="text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
-                          -${savings.toFixed(2)}
+                          -{formatINR(savings)}
                         </span>
                       </div>
                     )}

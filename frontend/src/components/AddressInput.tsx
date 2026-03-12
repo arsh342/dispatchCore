@@ -3,7 +3,7 @@
  *
  * Uses OSM Nominatim to suggest addresses as the user types.
  * When a suggestion is selected the lat/lng are passed back via onSelect.
- * The lat/lng coordinate fields are shown read-only for transparency.
+ * The lat/lng values stay in state but are not shown in the UI.
  */
 
 import { useRef, useState, useEffect } from "react";
@@ -28,8 +28,8 @@ export function AddressInput({
   label,
   iconColor = "text-blue-500",
   value,
-  lat,
-  lng,
+  lat: _lat,
+  lng: _lng,
   onSelect,
   onChange,
   placeholder = "Start typing an address...",
@@ -88,7 +88,7 @@ export function AddressInput({
           onFocus={() => {
             if (suggestions.length) setOpen(true);
           }}
-          className="w-full px-4 py-2.5 rounded-xl border border-border bg-white dark:bg-gray-800 text-sm text-foreground outline-none focus:border-primary pr-9"
+          className="w-full rounded-full border border-border bg-card px-4 py-2.5 pr-9 text-sm text-foreground outline-none transition-colors focus:border-primary"
         />
         {loading && (
           <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
@@ -96,35 +96,20 @@ export function AddressInput({
 
         {/* Suggestions dropdown */}
         {open && suggestions.length > 0 && (
-          <ul className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
+          <ul className="dc-scrollbar absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-3xl border border-border bg-card shadow-lg">
             {suggestions.map((s, i) => (
               <li
                 key={i}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleSelect(s)}
-                className="px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b last:border-b-0 border-gray-100 dark:border-gray-700/50 transition-colors"
+                className="cursor-pointer border-b border-border px-4 py-2.5 text-sm text-foreground transition-colors last:border-b-0 hover:bg-muted/70"
               >
                 <span className="line-clamp-2">{s.displayName}</span>
-                <span className="text-[10px] text-gray-400 mt-0.5 block">
-                  {s.lat.toFixed(5)}, {s.lng.toFixed(5)}
-                </span>
               </li>
             ))}
           </ul>
         )}
       </div>
-
-      {/* Read-only coordinates — shown after selection */}
-      {(lat || lng) && (
-        <div className="flex gap-3">
-          <div className="flex-1 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 text-xs text-muted-foreground font-mono">
-            Lat: {lat}
-          </div>
-          <div className="flex-1 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 text-xs text-muted-foreground font-mono">
-            Lng: {lng}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

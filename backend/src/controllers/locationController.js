@@ -11,11 +11,12 @@ const {
   DriverLocationLog,
   DeliveryEvent,
   Company,
-  User,
 } = require('../models');
 const { success } = require('../utils/response');
 const { NotFoundError } = require('../utils/errors');
 const { ORDER_STATUS } = require('../utils/constants');
+
+const getCreatedAt = (record) => record?.createdAt ?? record?.created_at ?? null;
 
 const pingLocation = async (req, res, next) => {
   try {
@@ -101,7 +102,7 @@ const trackOrder = async (req, res, next) => {
         recipientName: order.recipient_name,
         recipientPhone: order.recipient_phone,
         recipientEmail: order.recipient_email,
-        createdAt: order.created_at,
+        createdAt: getCreatedAt(order),
       },
       company: order.company
         ? { id: order.company.id, name: order.company.name, address: order.company.address }
@@ -121,8 +122,7 @@ const trackOrder = async (req, res, next) => {
           {
             model: Driver,
             as: 'driver',
-            attributes: ['id', 'type', 'status'],
-            include: [{ model: User, as: 'user', attributes: ['name', 'phone'] }],
+            attributes: ['id', 'name', 'phone', 'type', 'status'],
           },
         ],
       });
@@ -130,8 +130,8 @@ const trackOrder = async (req, res, next) => {
       if (assignment && assignment.driver) {
         response.driver = {
           id: assignment.driver.id,
-          name: assignment.driver.user?.name ?? `Driver #${assignment.driver.id}`,
-          phone: assignment.driver.user?.phone ?? null,
+          name: assignment.driver.name ?? `Driver #${assignment.driver.id}`,
+          phone: assignment.driver.phone ?? null,
           type: assignment.driver.type,
           status: assignment.driver.status,
         };
@@ -204,8 +204,7 @@ const getDriverLocations = async (req, res, next) => {
     // Get all drivers for this company
     const drivers = await Driver.findAll({
       where: companyId ? { company_id: parseInt(companyId, 10) } : {},
-      attributes: ['id', 'status'],
-      include: [{ model: require('../models').User, as: 'user', attributes: ['name'] }],
+      attributes: ['id', 'name', 'status'],
     });
 
     const locations = [];
@@ -218,7 +217,7 @@ const getDriverLocations = async (req, res, next) => {
       if (latest) {
         locations.push({
           driverId: driver.id,
-          name: driver.user?.name ?? `Driver #${driver.id}`,
+          name: driver.name ?? `Driver #${driver.id}`,
           status: driver.status,
           lat: parseFloat(latest.lat),
           lng: parseFloat(latest.lng),
