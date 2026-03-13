@@ -55,6 +55,19 @@ A platform-level SuperAdmin has full visibility across all companies to manage t
 | **Real-Time** | Socket.io |
 | **Security** | Helmet, express-rate-limit, express-validator |
 
+
+## Technical Architecture
+
+### Concurrent Assignment Prevention
+Two dispatchers assigning the same order simultaneously would cause double-assignment. The assignment service uses Sequelize SERIALIZABLE transactions with pessimistic row locking (`SELECT ... FOR UPDATE`) — the second transaction blocks until the first commits, then fails with a 409 conflict rather than silently creating a duplicate assignment.
+
+### Scoped WebSocket Rooms
+Socket.io rooms are namespaced per entity: `company:{id}:dispatchers`, `driver:{id}`, `order:{id}:tracking`. A driver GPS ping broadcasts only to that company's dispatchers and the relevant customer tracking page — not to the entire connected pool. This enforces multi-tenant isolation at the real-time layer.
+
+### Multi-Tenant Data Isolation
+Every table in the schema chains back to `company_id`. A `tenantResolver` middleware extracts the company scope from request headers and injects it into every query — Company A cannot read or write Company B's orders, drivers, or assignments.
+
+
 ## Who Is This For
 
 - Local and regional courier companies
