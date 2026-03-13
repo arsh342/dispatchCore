@@ -56,7 +56,7 @@ export function DashboardSidebar({
 
   return (
     <nav
-      className={`sticky top-0 h-screen shrink-0 border-r flex flex-col transition-all duration-300 ease-in-out ${
+      className={`sticky top-0 h-screen shrink-0 flex flex-col transition-all duration-300 ease-in-out ${
         open ? "w-60" : "w-[68px]"
       } border-border bg-card`}
     >

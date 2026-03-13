@@ -280,7 +280,7 @@ export function SignupPage() {
                   <button
                     type="button"
                     onClick={() => setAccountType("company")}
-                    className={`group relative flex flex-col items-start gap-2 p-4 rounded-2xl border transition-all duration-200 text-left ${
+                    className={`group relative flex flex-row items-start gap-2 p-4 rounded-full border transition-all duration-200 text-left ${
                       accountType === "company"
                         ? "border-primary bg-primary/5 shadow-sm"
                         : "border-border hover:border-foreground/20 hover:bg-muted"
@@ -291,18 +291,15 @@ export function SignupPage() {
                     />
                     <div>
                       <p className="text-sm font-semibold">Delivery Company</p>
-                      <p className="text-xs text-muted-foreground leading-tight">
-                        Register your company and invite your team
-                      </p>
                     </div>
                     {accountType === "company" && (
-                      <CheckCircleIcon className="size-4 text-primary absolute top-3 right-3" />
+                      <CheckCircleIcon className="size-4 text-primary absolute top-4.5 right-3" />
                     )}
                   </button>
                   <button
                     type="button"
                     onClick={() => setAccountType("driver")}
-                    className={`group relative flex flex-col items-start gap-2 p-4 rounded-2xl border transition-all duration-200 text-left ${
+                    className={`group relative flex flex-row items-start gap-2 p-4 rounded-full border transition-all duration-200 text-left ${
                       accountType === "driver"
                         ? "border-primary bg-primary/5 shadow-sm"
                         : "border-border hover:border-foreground/20 hover:bg-muted"
@@ -315,12 +312,9 @@ export function SignupPage() {
                       <p className="text-sm font-semibold">
                         Independent Driver
                       </p>
-                      <p className="text-xs text-muted-foreground leading-tight">
-                        Browse and bid on delivery jobs
-                      </p>
                     </div>
                     {accountType === "driver" && (
-                      <CheckCircleIcon className="size-4 text-primary absolute top-3 right-3" />
+                      <CheckCircleIcon className="size-4 text-primary absolute top-4.5 right-3" />
                     )}
                   </button>
                 </div>
