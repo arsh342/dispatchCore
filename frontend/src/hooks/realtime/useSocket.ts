@@ -34,7 +34,7 @@ export function useOrderTracking(
   },
 ) {
   const callbacksRef = useRef(callbacks);
-  callbacksRef.current = callbacks;
+  useEffect(() => { callbacksRef.current = callbacks; });
 
   useEffect(() => {
     if (!orderId) return;
@@ -94,7 +94,7 @@ export function useMarketplaceRoom(
   },
 ) {
   const callbacksRef = useRef(callbacks);
-  callbacksRef.current = callbacks;
+  useEffect(() => { callbacksRef.current = callbacks; });
 
   useEffect(() => {
     if (!companyId) return;
@@ -131,7 +131,7 @@ export function useOrderMessages(
   channel?: string,
 ) {
   const callbacksRef = useRef(callbacks);
-  callbacksRef.current = callbacks;
+  useEffect(() => { callbacksRef.current = callbacks; });
 
   useEffect(() => {
     if (!orderId) return;

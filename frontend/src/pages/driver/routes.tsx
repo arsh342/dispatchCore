@@ -346,8 +346,6 @@ export default function DriverRoutesPage() {
                   label="Starting from"
                   iconColor="text-blue-500"
                   value={startAddress}
-                  lat={startLat}
-                  lng={startLng}
                   onSelect={(addr, lat, lng) => {
                     setStartAddress(addr);
                     setStartLat(lat);
@@ -368,8 +366,6 @@ export default function DriverRoutesPage() {
                   label="Going to"
                   iconColor="text-green-500"
                   value={endAddress}
-                  lat={endLat}
-                  lng={endLng}
                   onSelect={(addr, lat, lng) => {
                     setEndAddress(addr);
                     setEndLat(lat);

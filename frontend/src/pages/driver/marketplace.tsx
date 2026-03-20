@@ -98,7 +98,7 @@ export default function DriverMarketplacePage() {
 
   useEffect(() => {
     refetchListings(sortBy);
-  }, [sortBy]);
+  }, [sortBy, refetchListings]);
 
   // Orders the driver hasn't bid on yet
   const unbidListings = useMemo(() => {
@@ -130,10 +130,10 @@ export default function DriverMarketplacePage() {
     <div className="flex min-h-screen w-full">
       <DriverSidebar />
 
-      <div className="flex-1 bg-background overflow-auto flex flex-col">
-        <div className="flex-1 flex flex-col lg:flex-row">
+      <div className="flex-1 min-h-screen bg-background overflow-auto lg:h-screen lg:min-h-0 lg:overflow-hidden flex flex-col">
+        <div className="flex-1 flex flex-col lg:flex-row lg:min-h-0 lg:h-full">
           {/* ═══ LEFT — Browse Available Orders ═══ */}
-          <div className="lg:w-[55%] border-r border-border flex flex-col">
+          <div className="lg:w-[55%] border-r border-border flex flex-col lg:min-h-0 lg:h-full">
             <div className="sticky top-0 z-10 bg-card backdrop-blur-xl border-b border-border px-6 py-4 flex items-center justify-between">
               <div>
                 <h1 className="text-xl font-bold text-foreground">
@@ -160,7 +160,7 @@ export default function DriverMarketplacePage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="dc-scrollbar flex-1 overflow-y-auto p-6 lg:min-h-0">
               {listingsLoading ? (
                 <div className="flex items-center justify-center py-20 text-gray-400">
                   <LoadingPackage />
@@ -272,7 +272,7 @@ export default function DriverMarketplacePage() {
           </div>
 
           {/* ═══ RIGHT — My Bids ═══ */}
-          <div className="lg:w-[45%] flex flex-col">
+          <div className="lg:w-[45%] flex flex-col lg:min-h-0 lg:h-full">
             <div className="sticky top-0 z-10 bg-card backdrop-blur-xl border-b border-border px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-foreground">
@@ -284,7 +284,7 @@ export default function DriverMarketplacePage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="dc-scrollbar flex-1 overflow-y-auto p-6 lg:min-h-0">
               {bidsLoading ? (
                 <div className="flex items-center justify-center py-20 text-gray-400">
                   <LoadingPackage />

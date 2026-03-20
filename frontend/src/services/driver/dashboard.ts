@@ -52,6 +52,8 @@ interface BackendAssignment {
   id: number;
   order_id: number;
   driver_id: number;
+  updated_at?: string | null;
+  updatedAt?: string | null;
   order?: {
     id: number;
     tracking_code: string;
@@ -152,7 +154,7 @@ export async function fetchDriverStats(): Promise<DriverStats> {
           : 0;
 
       // Use the order's updated_at as approximate delivery time
-      const updatedAt = (a as any).updated_at ?? (a as any).updatedAt;
+      const updatedAt = a.updated_at ?? a.updatedAt;
       const deliveredDate = updatedAt ? new Date(updatedAt) : null;
 
       if (deliveredDate && deliveredDate >= startOfDay) {
@@ -376,7 +378,7 @@ export async function fetchEarningsChart(): Promise<EarningsChart[]> {
           ? parseFloat(a.order.listed_price)
           : 0;
 
-      const updatedAt = (a as any).updated_at ?? (a as any).updatedAt;
+      const updatedAt = a.updated_at ?? a.updatedAt;
       const date = updatedAt ? new Date(updatedAt) : null;
       if (date && date >= startOfWeek) {
         chart[date.getDay()].amount += amount;

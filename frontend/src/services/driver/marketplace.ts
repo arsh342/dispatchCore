@@ -101,7 +101,7 @@ export async function fetchMarketplaceListings(
     const listings = await get<BackendListing[]>(
       `/dashboard/marketplace-listings?sort=${sort}`,
     );
-    let results = listings.map(listingToFrontend);
+    const results = listings.map(listingToFrontend);
 
     // Client-side distance sort (distance is computed client-side for now)
     if (sortBy === "distance") {

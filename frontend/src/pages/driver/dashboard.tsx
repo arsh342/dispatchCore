@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DriverSidebar } from "@/components/dashboard/driver-sidebar";
 import { useGeolocationPing } from "@/hooks/location/useGeolocationPing";
@@ -97,21 +97,18 @@ export default function DriverDashboardPage() {
     : 100;
 
   // Status Toggle
-  const [localStatus, setLocalStatus] = useState(user?.status || "offline");
-
-  useEffect(() => {
-    if (user?.status) setLocalStatus(user.status);
-  }, [user?.status]);
+  const [statusOverride, setStatusOverride] = useState<string | null>(null);
+  const localStatus = statusOverride ?? user?.status ?? "offline";
 
   const toggleStatus = async () => {
     const newStatus = localStatus === "online" ? "offline" : "online";
-    setLocalStatus(newStatus); // Optimistic UI update
+    setStatusOverride(newStatus); // Optimistic UI update
     try {
       await updateDriverStatus(newStatus);
     } catch (error) {
       console.error("Failed to update status:", error);
       // Revert on failure
-      setLocalStatus(localStatus);
+      setStatusOverride(null);
     }
   };
 

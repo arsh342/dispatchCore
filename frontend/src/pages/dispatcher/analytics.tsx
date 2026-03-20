@@ -48,6 +48,14 @@ interface BackendStats {
   activeBids: number;
 }
 
+type MetricCard = {
+  label: string;
+  value: number | string;
+  icon: typeof Package | typeof CheckCircle2 | typeof IndianRupee | typeof TrendingUp;
+  change: number | null;
+  sparkline?: number[];
+};
+
 /* ─── Helper: generate last N days ─── */
 function lastNDays(n: number): Date[] {
   const days: Date[] = [];
@@ -139,12 +147,15 @@ function DonutChart({
   const total = segments.reduce((s, seg) => s + seg.value, 0) || 1;
   const r = 40;
   const circumference = 2 * Math.PI * r;
-  let offset = 0;
 
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
         {segments.map((seg, i) => {
+          const offset = segments
+            .slice(0, i)
+            .reduce((sum, previous) => sum + (previous.value / total) * circumference, 0);
+          const currentOffset = offset;
           const pct = seg.value / total;
           const dashLen = pct * circumference;
           const gap = circumference - dashLen;
@@ -158,12 +169,11 @@ function DonutChart({
               stroke={seg.color}
               strokeWidth="10"
               strokeDasharray={`${dashLen} ${gap}`}
-              strokeDashoffset={-offset}
+              strokeDashoffset={-currentOffset}
               strokeLinecap="round"
               className="transition-all duration-500"
             />
           );
-          offset += dashLen;
           return el;
         })}
       </svg>
@@ -424,7 +434,7 @@ export default function DispatcherAnalyticsPage() {
           <div className="p-6 space-y-6">
             {/* ─── KPI Cards ─── */}
             <div className="grid grid-cols-4 gap-4">
-              {[
+              {(([
                 {
                   label: "Total Orders",
                   value: periodOrders,
@@ -450,7 +460,7 @@ export default function DispatcherAnalyticsPage() {
                   change: null,
                   sparkline: deliveryRateSpark,
                 },
-              ].map((kpi, i) => (
+              ] satisfies MetricCard[])).map((kpi, i) => (
                 <motion.div
                   key={kpi.label}
                   initial={{ opacity: 0, y: 12 }}
@@ -477,16 +487,14 @@ export default function DispatcherAnalyticsPage() {
                         )}
                         {Math.abs(kpi.change)}%
                       </span>
-                    ) : (
-                      (kpi as any).sparkline && (
-                        <Sparkline
-                          data={(kpi as any).sparkline}
-                          color="#57534e"
-                          width={80}
-                          height={28}
-                        />
-                      )
-                    )}
+                    ) : kpi.sparkline ? (
+                      <Sparkline
+                        data={kpi.sparkline}
+                        color="#57534e"
+                        width={80}
+                        height={28}
+                      />
+                    ) : null}
                   </div>
                   <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
                   <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>

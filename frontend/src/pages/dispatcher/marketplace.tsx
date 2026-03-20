@@ -70,7 +70,7 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     refetchListed(sortBy);
-  }, [sortBy]);
+  }, [sortBy, refetchListed]);
 
   // Filter bids to show for selected order, or show all pending
   const visibleBids = useMemo(() => {
@@ -94,10 +94,10 @@ export default function MarketplacePage() {
     <div className="flex min-h-screen w-full">
       <DashboardSidebar />
 
-      <div className="flex-1 bg-background overflow-auto flex flex-col">
-        <div className="flex-1 flex flex-col lg:flex-row">
+      <div className="flex-1 min-h-screen bg-background overflow-auto lg:h-screen lg:min-h-0 lg:overflow-hidden flex flex-col">
+        <div className="flex-1 flex flex-col lg:flex-row lg:min-h-0 lg:h-full">
           {/* ═══ LEFT — Dispatcher's Marketplace Listings ═══ */}
-          <div className="lg:w-[55%] border-r border-border flex flex-col">
+          <div className="lg:w-[55%] border-r border-border flex flex-col lg:min-h-0 lg:h-full">
             {/* Header */}
             <div className="sticky top-0 z-10 bg-card backdrop-blur-xl border-b border-border px-6 py-4">
               <div className="flex items-center justify-between mb-3">
@@ -158,7 +158,7 @@ export default function MarketplacePage() {
             </div>
 
             {/* Listed orders */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="dc-scrollbar flex-1 overflow-y-auto p-6 lg:min-h-0">
               {listedLoading ? (
                 <div className="flex items-center justify-center py-20 text-gray-400">
                   <LoadingPackage />
@@ -273,7 +273,7 @@ export default function MarketplacePage() {
           </div>
 
           {/* ═══ RIGHT — Incoming Bids from Independent Drivers ═══ */}
-          <div className="lg:w-[45%] flex flex-col">
+          <div className="lg:w-[45%] flex flex-col lg:min-h-0 lg:h-full">
             <div className="sticky top-0 z-10 bg-card backdrop-blur-xl border-b border-border px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <h2 className="text-xl font-bold text-foreground">
@@ -304,7 +304,7 @@ export default function MarketplacePage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="dc-scrollbar flex-1 overflow-y-auto p-6 lg:min-h-0">
               {bidsLoading ? (
                 <div className="flex items-center justify-center py-20 text-gray-400">
                   <LoadingPackage />

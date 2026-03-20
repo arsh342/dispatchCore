@@ -38,7 +38,8 @@ export function TimePicker({ value, onChange, label }: TimePickerProps) {
     return () => document.removeEventListener("pointerdown", handler);
   }, []);
 
-  // Sync from external value
+  // Sync from external value (controlled component pattern)
+  /* eslint-disable react-hooks/set-state-in-effect -- Syncing controlled prop to local state */
   useEffect(() => {
     if (value) {
       const [h, m] = value.split(":").map(Number);
@@ -46,6 +47,7 @@ export function TimePicker({ value, onChange, label }: TimePickerProps) {
       setSelectedMinute(m);
     }
   }, [value]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Scroll to selected on open
   useEffect(() => {

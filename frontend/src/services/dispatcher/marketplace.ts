@@ -140,7 +140,7 @@ export async function fetchListedOrders(
 ): Promise<MarketplaceOrder[]> {
   try {
     const orders = await get<BackendOrder[]>("/orders?status=LISTED");
-    let results = orders.map(orderToMarketplaceOrder);
+    const results = orders.map(orderToMarketplaceOrder);
 
     if (sortBy === "price")
       results.sort((a, b) => b.listedPrice - a.listedPrice);

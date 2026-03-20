@@ -465,7 +465,9 @@ export default function CustomerTrackingPage() {
   }, [trackingCode]);
 
   useEffect(() => {
-    fetchTracking();
+    void (async () => {
+      await fetchTracking();
+    })();
   }, [fetchTracking]);
 
   useEffect(() => {

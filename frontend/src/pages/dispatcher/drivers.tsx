@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import {
   Search,
@@ -68,7 +68,7 @@ export default function DriversPage() {
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
   const companyId = localStorage.getItem("dc_company_id") || "";
 
-  const fetchDrivers = async () => {
+  const fetchDrivers = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/drivers?type=EMPLOYED`, {
@@ -81,11 +81,11 @@ export default function DriversPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL, companyId]);
 
   useEffect(() => {
     fetchDrivers();
-  }, []);
+  }, [fetchDrivers]);
 
   const handleAddDriver = async () => {
     setFormError("");

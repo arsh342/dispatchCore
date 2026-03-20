@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect -- All hooks here use the standard fetch-on-mount pattern via useEffect + refetch callback */
 import { useState, useEffect, useCallback } from "react";
 import type {
   DriverStats,

@@ -36,6 +36,30 @@ interface ShipmentItem {
   progress: number; // 0-100
 }
 
+interface BackendShipmentOrder {
+  id: number;
+  tracking_code: string;
+  pickup_address: string | null;
+  delivery_address: string | null;
+  status: string;
+  weight_kg: string | null;
+  pickup_lat: string | null;
+  pickup_lng: string | null;
+  delivery_lat: string | null;
+  delivery_lng: string | null;
+  updatedAt?: string | null;
+  assignment?: {
+    driver?: {
+      name?: string | null;
+      user?: { name?: string | null } | null;
+    } | null;
+    vehicle?: {
+      type?: string | null;
+      plate_number?: string | null;
+    } | null;
+  } | null;
+}
+
 const statusConfig: Record<ShipmentStatus, { color: string; bgColor: string }> =
   {
     Pending: {
@@ -101,11 +125,12 @@ export default function ShipmentsPage() {
   useEffect(() => {
     async function load() {
       try {
-        const orders = await get<any[]>("/orders");
+        const orders = await get<BackendShipmentOrder[]>("/orders");
         setShipments(
           orders.map((o) => {
             const assignment = o.assignment;
-            const driverName = assignment?.driver?.user?.name ?? "—";
+            const driverName =
+              assignment?.driver?.name ?? assignment?.driver?.user?.name ?? "—";
             const vehicleType = assignment?.vehicle?.type ?? "—";
             const vehiclePlate = assignment?.vehicle?.plate_number;
             const vehicleLabel =
@@ -171,10 +196,10 @@ export default function ShipmentsPage() {
   return (
     <div className="flex min-h-screen w-full">
       <DashboardSidebar />
-      <div className="flex-1 bg-background overflow-auto flex flex-col lg:flex-row">
+      <div className="flex-1 min-h-screen bg-background overflow-auto lg:h-screen lg:min-h-0 lg:overflow-hidden flex flex-col lg:flex-row">
         {/* ═══ Left — Shipment List ═══ */}
         <div
-          className={`${selected ? "lg:w-[55%]" : "w-full"} border-r border-border flex flex-col transition-all`}
+          className={`${selected ? "lg:w-[55%]" : "w-full"} border-r border-border flex flex-col transition-all lg:min-h-0 lg:h-full`}
         >
           <header className="sticky top-0 z-10 bg-card backdrop-blur-xl border-b border-border px-6 py-4">
             <div className="flex items-center justify-between mb-3">
@@ -215,7 +240,7 @@ export default function ShipmentsPage() {
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="dc-scrollbar flex-1 overflow-y-auto p-4 space-y-3 lg:min-h-0">
             {loading ? (
               <div className="flex items-center justify-center py-20 text-gray-400">
                 <LoadingPackage />
@@ -297,7 +322,7 @@ export default function ShipmentsPage() {
 
         {/* ═══ Right — Shipment Detail Panel ═══ */}
         {selected && (
-          <div className="lg:w-[45%] bg-card border-l border-border overflow-y-auto">
+          <div className="dc-scrollbar lg:w-[45%] bg-card border-l border-border overflow-y-auto lg:min-h-0 lg:h-full lg:flex lg:flex-col">
             <div className="sticky top-0 z-10 bg-card backdrop-blur-xl border-b border-border px-6 py-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-foreground">
                 Shipment Details
@@ -310,7 +335,7 @@ export default function ShipmentsPage() {
               </button>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="dc-scrollbar p-6 space-y-5 lg:flex-1 lg:overflow-y-auto">
               {/* ID + Status */}
               <div className="flex items-center justify-between">
                 <div>

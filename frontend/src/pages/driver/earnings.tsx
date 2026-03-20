@@ -259,8 +259,11 @@ export default function DriverEarningsPage() {
   }, [completedTxns]);
 
   /* ─── Week view data ─── */
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = useMemo(() => {
+    const current = new Date();
+    current.setHours(0, 0, 0, 0);
+    return current;
+  }, []);
 
   const weekStart = getStartOfWeek(new Date(), weekOffset);
   const weekEnd = new Date(weekStart);

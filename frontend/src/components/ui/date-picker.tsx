@@ -56,7 +56,8 @@ export function DatePicker({ value, onChange, min, label }: DatePickerProps) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Sync view when value changes externally
+  // Sync view when value changes externally (controlled component pattern)
+  /* eslint-disable react-hooks/set-state-in-effect -- Syncing controlled prop to local view state */
   useEffect(() => {
     if (value) {
       const d = new Date(value + "T00:00:00");
@@ -64,6 +65,7 @@ export function DatePicker({ value, onChange, min, label }: DatePickerProps) {
       setViewMonth(d.getMonth());
     }
   }, [value]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const prevMonth = () => {
     if (viewMonth === 0) {

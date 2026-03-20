@@ -17,8 +17,6 @@ interface AddressInputProps {
   label: string;
   iconColor?: string;
   value: string;
-  lat: string;
-  lng: string;
   onSelect: (address: string, lat: string, lng: string) => void;
   onChange: (address: string) => void;
   placeholder?: string;
@@ -28,8 +26,6 @@ export function AddressInput({
   label,
   iconColor = "text-blue-500",
   value,
-  lat: _lat,
-  lng: _lng,
   onSelect,
   onChange,
   placeholder = "Start typing an address...",

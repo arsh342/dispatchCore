@@ -10,8 +10,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface SidebarProps {}
+
 
 const navItems = [
   {
@@ -37,7 +36,7 @@ const navItems = [
   { icon: MessageSquare, label: "Messages", href: "/employed-driver/messages" },
 ];
 
-export function EmployedDriverSidebar(_props: SidebarProps) {
+export function EmployedDriverSidebar() {
   const [open, setOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();

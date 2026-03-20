@@ -776,8 +776,6 @@ export default function DashboardPage() {
                 label="Pickup Location"
                 iconColor="text-blue-500"
                 value={orderForm.pickup_address}
-                lat={orderForm.pickup_lat}
-                lng={orderForm.pickup_lng}
                 placeholder="Start typing pickup address..."
                 onChange={(addr) =>
                   setOrderForm((p) => ({ ...p, pickup_address: addr }))
@@ -797,8 +795,6 @@ export default function DashboardPage() {
                 label="Delivery Location"
                 iconColor="text-green-500"
                 value={orderForm.delivery_address}
-                lat={orderForm.delivery_lat}
-                lng={orderForm.delivery_lng}
                 placeholder="Start typing delivery address..."
                 onChange={(addr) =>
                   setOrderForm((p) => ({ ...p, delivery_address: addr }))

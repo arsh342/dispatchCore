@@ -53,7 +53,7 @@ export default function MapView({
   center = [76.78, 30.73], // Default: Punjab, India
   zoom = 11,
   bounds,
-  className: _className = "",
+  className = "",
   interactive = true,
   onMarkerClick,
   children,
@@ -84,15 +84,16 @@ export default function MapView({
   );
 
   return (
-    <Map
-      ref={mapRef}
-      mapStyle={MAP_STYLE}
-      initialViewState={{ longitude: center[0], latitude: center[1], zoom }}
-      style={{ width: "100%", height: "100%" }}
-      interactive={interactive}
-      attributionControl={false}
-    >
-      <NavigationControl position="bottom-right" showCompass={false} />
+    <div className={`h-full w-full ${className}`.trim()}>
+      <Map
+        ref={mapRef}
+        mapStyle={MAP_STYLE}
+        initialViewState={{ longitude: center[0], latitude: center[1], zoom }}
+        style={{ width: "100%", height: "100%" }}
+        interactive={interactive}
+        attributionControl={false}
+      >
+        <NavigationControl position="bottom-right" showCompass={false} />
 
       {/* Route polylines */}
       {routes.map((route) => (
@@ -212,7 +213,8 @@ export default function MapView({
         );
       })}
 
-      {children}
-    </Map>
+        {children}
+      </Map>
+    </div>
   );
 }
