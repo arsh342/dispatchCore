@@ -7,4 +7,6 @@ pencil_ui_prompt.md
 .vscode
 docs/plans
 
+cert/
+
 .github/copilot-instructions.md

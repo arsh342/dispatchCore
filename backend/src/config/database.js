@@ -7,6 +7,8 @@
  */
 
 const env = require('./env');
+const fs = require('fs');
+const path = require('path');
 
 const baseConfig = {
     username: env.db.user,
@@ -29,14 +31,40 @@ const baseConfig = {
     },
 };
 
+const buildSslDialectOptions = () => {
+    if (!env.db.ssl.enabled) {
+        return {};
+    }
+
+    const sslConfig = {
+        require: true,
+        rejectUnauthorized: env.db.ssl.rejectUnauthorized,
+    };
+
+    if (env.db.ssl.caPath) {
+        const resolvedCaPath = path.isAbsolute(env.db.ssl.caPath)
+            ? env.db.ssl.caPath
+            : path.resolve(__dirname, '..', '..', env.db.ssl.caPath);
+        sslConfig.ca = fs.readFileSync(resolvedCaPath, 'utf8');
+    }
+
+    return {
+        dialectOptions: {
+            ssl: sslConfig,
+        },
+    };
+};
+
 module.exports = {
     development: {
         ...baseConfig,
+        ...buildSslDialectOptions(),
     },
     test: {
         ...baseConfig,
         database: `${env.db.name}_test`,
         logging: false,
+        ...buildSslDialectOptions(),
     },
     production: {
         ...baseConfig,
@@ -47,11 +75,6 @@ module.exports = {
             acquire: 60000,
             idle: 10000,
         },
-        dialectOptions: {
-            ssl: {
-                require: true,
-                rejectUnauthorized: true,
-            },
-        },
+        ...buildSslDialectOptions(),
     },
 };

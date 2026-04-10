@@ -70,6 +70,11 @@ async function request<T>(
       message: res.statusText,
       status: res.status,
     };
+
+    if (err.status === 503 && window.location.pathname !== "/503") {
+      window.location.assign("/503");
+    }
+
     throw new ApiRequestError(err.code, err.message, err.status ?? res.status);
   }
 

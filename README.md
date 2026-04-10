@@ -85,10 +85,14 @@ Every table in the schema chains back to `company_id`. A `tenantResolver` middle
 ```bash
 # Backend
 cd backend
-cp .env.example .env
+cp .env.development.example .env.development
 npm install
 npm run db:migrate
 npm run dev        # → http://localhost:8000
+
+# Production backend env template (Render/Aiven)
+cp .env.production.example .env.production
+npm run start:prod
 
 # Frontend
 cd frontend

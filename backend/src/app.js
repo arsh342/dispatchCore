@@ -11,6 +11,7 @@ const corsMiddleware = require('./config/cors');
 const { apiLimiter } = require('./middlewares/rateLimiter');
 const errorHandler = require('./middlewares/errorHandler');
 const requestIdentity = require('./middlewares/requestIdentity');
+const maintenanceMode = require('./middlewares/maintenanceMode');
 const routes = require('./routes');
 const logger = require('./config/logger');
 
@@ -49,6 +50,9 @@ app.use(corsMiddleware);
 
 // ── CE-01 Identity Context ──
 app.use(requestIdentity);
+
+// ── Maintenance Mode (for controlled cutovers) ──
+app.use('/api', maintenanceMode);
 
 // ── Rate Limiting (global) ──
 app.use('/api', apiLimiter);

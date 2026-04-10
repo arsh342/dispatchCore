@@ -244,7 +244,6 @@ const updateOrderStatus = async (req, res, next) => {
     if (!order) {
       throw new NotFoundError('Order');
     }
-
     // Validate status transition
     const validTransitions = {
       ASSIGNED: ['PICKED_UP'],

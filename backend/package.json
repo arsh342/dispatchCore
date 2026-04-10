@@ -4,8 +4,9 @@
   "description": "Backend API for dispatchCore — real-time last-mile logistics control platform",
   "main": "server.js",
   "scripts": {
-    "dev": "nodemon server.js",
+    "dev": "NODE_ENV=development nodemon server.js",
     "start": "node server.js",
+    "start:prod": "NODE_ENV=production node server.js",
     "lint": "eslint src/ --ext .js",
     "lint:fix": "eslint src/ --ext .js --fix",
     "format": "prettier --write \"src/**/*.js\" \"server.js\"",
