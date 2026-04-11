@@ -349,7 +349,7 @@ export default function OrdersPage() {
                                 ) : (
                                   <X className="h-3 w-3" />
                                 )}
-                                Remove Bid
+                                Market
                               </button>
                             )}
                             {o.status !== "Pending" &&

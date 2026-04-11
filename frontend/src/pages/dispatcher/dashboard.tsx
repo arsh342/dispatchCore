@@ -786,7 +786,7 @@ export default function DashboardPage() {
                                 ) : (
                                   <X className="h-3 w-3" />
                                 )}
-                                Remove Bid
+                                Market
                               </button>
                             )}
                             {/* Chat with driver (when assigned) */}
