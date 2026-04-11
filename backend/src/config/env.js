@@ -72,7 +72,7 @@ const envSchema = Joi.object({
 const { error, value: envVars } = envSchema.validate(process.env);
 
 if (error) {
-    console.error(`\n❌ Environment validation error:\n   ${error.message}\n`);
+    console.error(`\nEnvironment validation error:\n   ${error.message}\n`);
     console.error('   Copy .env.example to .env and fill in the required values.\n');
     process.exit(1);
 }

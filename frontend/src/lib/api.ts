@@ -10,7 +10,7 @@
  * - If refresh fails, user is sent to login page
  */
 
-import { getIdentityHeaders } from "@/lib/session";
+import { getIdentityHeaders, getRefreshToken, setAuthTokens } from "@/lib/session";
 
 // ── Config ──
 
@@ -90,9 +90,24 @@ async function refreshAccessToken(): Promise<boolean> {
     try {
       const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getIdentityHeaders(),
+        },
         credentials: "include", // Send cookies
+        body: JSON.stringify({ refreshToken: getRefreshToken() }),
       });
+
+      let body: { data?: { tokens?: { accessToken?: string; refreshToken?: string } } } = {};
+      try {
+        body = await res.json();
+      } catch {
+        body = {};
+      }
+
+      if (body.data?.tokens) {
+        setAuthTokens(body.data.tokens);
+      }
 
       if (res.ok) {
         isRefreshing = false;

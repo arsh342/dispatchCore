@@ -5,6 +5,10 @@ export interface AuthLoginResponse {
     | "employed_driver"
     | "independent_driver";
   targetRoute: string;
+  tokens?: {
+    accessToken?: string;
+    refreshToken?: string;
+  };
   session: {
     companyId?: number | null;
     companyName?: string | null;
@@ -26,6 +30,8 @@ const SESSION_KEYS = [
   "dc_driver_name",
   "dc_user_role",
   "dc_user_email",
+  "dc_access_token",
+  "dc_refresh_token",
 ] as const;
 
 export function getIdentityHeaders(): Record<string, string> {
@@ -36,6 +42,11 @@ export function getIdentityHeaders(): Record<string, string> {
 
   if (companyId) headers["x-company-id"] = companyId;
   if (driverId) headers["x-driver-id"] = driverId;
+
+  const accessToken = localStorage.getItem("dc_access_token");
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
 
   return headers;
 }
@@ -51,6 +62,13 @@ export function applyAuthSession(payload: AuthLoginResponse) {
   localStorage.setItem("dc_user_name", payload.session.name);
   localStorage.setItem("dc_user_email", payload.session.email);
 
+  if (payload.tokens?.accessToken) {
+    localStorage.setItem("dc_access_token", payload.tokens.accessToken);
+  }
+  if (payload.tokens?.refreshToken) {
+    localStorage.setItem("dc_refresh_token", payload.tokens.refreshToken);
+  }
+
   if (payload.session.companyId) {
     localStorage.setItem("dc_company_id", String(payload.session.companyId));
   }
@@ -64,6 +82,22 @@ export function applyAuthSession(payload: AuthLoginResponse) {
     localStorage.setItem("dc_driver_id", String(payload.session.driverId));
     localStorage.setItem("dc_driver_name", payload.session.name);
   }
+}
+
+export function setAuthTokens(tokens: {
+  accessToken?: string;
+  refreshToken?: string;
+}) {
+  if (tokens.accessToken) {
+    localStorage.setItem("dc_access_token", tokens.accessToken);
+  }
+  if (tokens.refreshToken) {
+    localStorage.setItem("dc_refresh_token", tokens.refreshToken);
+  }
+}
+
+export function getRefreshToken(): string | null {
+  return localStorage.getItem("dc_refresh_token");
 }
 
 /**

@@ -42,6 +42,25 @@ function setTokenCookies(req, res, accessToken, refreshToken) {
   });
 }
 
+function extractRefreshToken(req) {
+  const cookieToken = req.cookies?.refreshToken;
+  if (cookieToken) {
+    return cookieToken;
+  }
+
+  const bodyToken = typeof req.body?.refreshToken === 'string' ? req.body.refreshToken.trim() : '';
+  if (bodyToken) {
+    return bodyToken;
+  }
+
+  const authHeader = req.headers.authorization || '';
+  if (authHeader.startsWith('Bearer ')) {
+    return authHeader.slice('Bearer '.length).trim();
+  }
+
+  return null;
+}
+
 const login = async (req, res, next) => {
   try {
     const email = String(req.body.email || '').trim().toLowerCase();
@@ -73,6 +92,10 @@ const login = async (req, res, next) => {
       return success(res, {
         accountType: 'superadmin',
         targetRoute: '/superadmin',
+        tokens: {
+          accessToken,
+          refreshToken,
+        },
         session: {
           name: 'Platform Admin',
           email: SUPERADMIN_EMAIL,
@@ -101,6 +124,10 @@ const login = async (req, res, next) => {
       return success(res, {
         accountType: 'company',
         targetRoute: '/dashboard',
+        tokens: {
+          accessToken,
+          refreshToken,
+        },
         session: {
           companyId: company.id,
           companyName: company.name,
@@ -144,6 +171,10 @@ const login = async (req, res, next) => {
       return success(res, {
         accountType: driverType,
         targetRoute: isEmployed ? '/employed-driver/dashboard' : '/driver/dashboard',
+        tokens: {
+          accessToken,
+          refreshToken,
+        },
         session: {
           driverId: driver.id,
           companyId: driver.company_id,
@@ -168,7 +199,7 @@ const login = async (req, res, next) => {
  */
 const refresh = async (req, res, next) => {
   try {
-    const refreshToken = req.cookies?.refreshToken;
+    const refreshToken = extractRefreshToken(req);
 
     if (!refreshToken) {
       throw new UnauthorizedError('Refresh token not found');
@@ -199,6 +230,10 @@ const refresh = async (req, res, next) => {
 
     return success(res, {
       message: 'Token refreshed successfully',
+      tokens: {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      },
     });
   } catch (error) {
     next(error);

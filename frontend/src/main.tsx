@@ -4,6 +4,42 @@ import "./index.css";
 import App from "./App.tsx";
 import { useTheme } from "./hooks/app/useTheme";
 
+function installApiFetchAuthFallback() {
+  const nativeFetch = window.fetch.bind(window);
+  const fallbackUrl = "http://localhost:8000/api";
+  const configuredApiBase = (import.meta.env.VITE_API_URL ?? fallbackUrl)
+    .trim()
+    .replace(/\/$/, "");
+
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const requestUrl =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
+
+    const isApiRequest = requestUrl.startsWith(configuredApiBase);
+    if (!isApiRequest) {
+      return nativeFetch(input, init);
+    }
+
+    const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+    const accessToken = localStorage.getItem("dc_access_token");
+    if (accessToken && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${accessToken}`);
+    }
+
+    const nextInit: RequestInit = {
+      ...init,
+      headers,
+      credentials: init?.credentials ?? "include",
+    };
+
+    return nativeFetch(input, nextInit);
+  };
+}
+
 function applyInitialTheme() {
   try {
     const stored = localStorage.getItem("dc_theme");
@@ -25,6 +61,7 @@ function ThemeController() {
 }
 
 applyInitialTheme();
+installApiFetchAuthFallback();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

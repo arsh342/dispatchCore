@@ -16,7 +16,12 @@ const logger = require('../config/logger');
  */
 function authMiddleware(req, res, next) {
   try {
-    const accessToken = req.cookies?.accessToken;
+    const cookieToken = req.cookies?.accessToken;
+    const authHeader = req.headers.authorization || '';
+    const bearerToken = authHeader.startsWith('Bearer ')
+      ? authHeader.slice('Bearer '.length).trim()
+      : null;
+    const accessToken = cookieToken || bearerToken;
 
     if (!accessToken) {
       throw new UnauthorizedError('Access token not found');
@@ -49,7 +54,12 @@ function authMiddleware(req, res, next) {
  */
 function optionalAuth(req, res, next) {
   try {
-    const accessToken = req.cookies?.accessToken;
+    const cookieToken = req.cookies?.accessToken;
+    const authHeader = req.headers.authorization || '';
+    const bearerToken = authHeader.startsWith('Bearer ')
+      ? authHeader.slice('Bearer '.length).trim()
+      : null;
+    const accessToken = cookieToken || bearerToken;
 
     if (accessToken) {
       const decoded = verifyAccessToken(accessToken);
