@@ -85,20 +85,33 @@ Every table in the schema chains back to `company_id`. A `tenantResolver` middle
 ```bash
 # Backend
 cd backend
-cp .env.development.example .env.development
+cp .env.example .env
 npm install
 npm run db:migrate
 npm run dev        # → http://localhost:8000
 
-# Production backend env template (Render/Aiven)
-cp .env.production.example .env.production
-npm run start:prod
+# Production backend runtime (Render)
+npm start          # do not use npm run dev in production
 
 # Frontend
 cd frontend
 npm install
 npm run dev        # → http://localhost:5173
 ```
+
+## Auth Model
+
+- Primary mode: HttpOnly JWT cookies (`accessToken`, `refreshToken`).
+- Fallback mode: Bearer token headers for browsers/environments that block third-party cookies.
+- Frontend sends `credentials: include` and can transparently refresh expired access tokens.
+
+## Production Notes
+
+- Render Start Command: `npm start` (or `npm run start:prod`).
+- Do not use `npm run dev` on Render; `nodemon` is dev-only.
+- Ensure `FRONTEND_URL` exactly matches your deployed frontend origin.
+- Set strong `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` in backend env.
+- Run `npm run db:migrate` during release before serving traffic.
 
 ## The Vision
 

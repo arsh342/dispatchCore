@@ -27,6 +27,10 @@ MAPTILER_API_KEY=
 
 # Deployment
 FRONTEND_URL=http://localhost:5173
+
+# JWT
+JWT_ACCESS_SECRET=change-me-access-secret-at-least-32-chars
+JWT_REFRESH_SECRET=change-me-refresh-secret-at-least-32-chars
 ```
 
 ### Startup Validation
@@ -272,6 +276,8 @@ const corsOptions = {
 };
 ```
 
+`Authorization` is required for bearer-token fallback. Legacy `x-company-id` and `x-driver-id` are still accepted for backward compatibility on non-authenticated flows.
+
 ### Security Headers
 Helmet.js is applied globally for XSS, clickjacking, and MIME-sniff protection.
 
@@ -299,18 +305,21 @@ All company-scoped endpoints pass through `tenantResolver` middleware:
 
 ```javascript
 // middlewares/tenantResolver.js
-// Extracts company_id from x-company-id header
-// Sets req.tenantId for downstream use
-// All Order/Assignment/Company queries filter by req.tenantId
+// Resolves company context from req.identity (normalized identity)
+// req.identity is populated by requestIdentity middleware, prioritizing trusted JWT claims
+// over client-supplied headers.
+// Sets req.tenantId for downstream use.
+// All Order/Assignment/Company queries filter by req.tenantId.
 ```
 
-### Identity Headers (CE-01)
-Current authentication is header-based (CE-02 will add JWT):
+### Identity Model (Current)
+Authentication is JWT-based with cookie-first transport and bearer fallback:
 
-| Header | Purpose | Set By |
+| Source | Purpose | Notes |
 |---|---|---|
-| `x-company-id` | Company tenant scope | Frontend (from localStorage) |
-| `x-driver-id` | Driver identity | Frontend (from localStorage) |
+| `accessToken` (HttpOnly cookie) | Primary authenticated identity | Preferred in both local and production environments |
+| `Authorization: Bearer <token>` | Fallback identity transport | Used when third-party cookies are blocked |
+| `x-company-id` / `x-driver-id` | Legacy identity hints | Used only when trusted auth context is absent |
 
 ---
 
@@ -322,7 +331,8 @@ Current authentication is header-based (CE-02 will add JWT):
 // Wraps fetch() with automatic:
 // - Base URL injection (VITE_API_URL)
 // - JSON content-type headers
-// - Identity headers (x-company-id, x-driver-id)
+// - credentials: 'include' for auth cookies
+// - Authorization bearer fallback from stored access token
 // - Response unwrapping (extracts data from { success, data, meta } envelope)
 // - Error handling
 ```

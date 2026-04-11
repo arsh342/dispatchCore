@@ -94,7 +94,7 @@ Last-mile delivery is the most expensive segment of the logistics chain. Small a
 | **Scalability** | Concurrent WebSocket connections | 10,000+ per server |
 | **Scalability** | GPS pings per second | 1,000+ writes/sec |
 | **Security** | Data isolation | Strict tenant boundary (company_id scoping) |
-| **Security** | Authentication | Header-based identity (CE-02: JWT tokens) |
+| **Security** | Authentication | JWT (HttpOnly cookie primary) with bearer-token fallback for strict browser environments |
 
 ### 1.4 MoSCoW Prioritization
 
@@ -102,7 +102,7 @@ Last-mile delivery is the most expensive segment of the logistics chain. Small a
 |---|---|
 | **Must Have** | Multi-tenant isolation, Order CRUD, Direct assignment with locking, Live GPS tracking, WebSocket rooms, Marketplace listing, Bidding, Customer tracking page, Delivery history (role-scoped), In-app messaging |
 | **Should Have** | Route pre-registration, Route matching, Delivery event audit log, Earnings computation, Auto-refresh dashboards, Server-side status transition enforcement |
-| **Won't Have (CE-01)** | JWT auth, Push notifications, AI route optimization, Email notifications, CI/CD, WebSocket auth handshakes, Hub management UI, RouteStop multi-delivery batching, Per-user rate limiting |
+| **Won't Have (CE-01)** | Push notifications, AI route optimization, Email notifications, CI/CD, WebSocket auth handshakes, Hub management UI, RouteStop multi-delivery batching, Per-user rate limiting |
 
 ---
 
@@ -728,6 +728,8 @@ stateDiagram-v2
 | Method | Endpoint | Description | Auth |
 |---|---|---|---|
 | POST | `/api/auth/login` | Login with email/password | Public |
+| POST | `/api/auth/refresh` | Rotate access token using refresh token | Public (refresh token required) |
+| POST | `/api/auth/logout` | Clear auth cookies and client session | Authenticated |
 
 #### Companies
 | Method | Endpoint | Description | Auth |
@@ -872,7 +874,7 @@ The same `/api/history` endpoint returns different fields based on the caller's 
 | Layer | Measure | Implementation |
 |---|---|---|
 | Transport | HTTPS/TLS | SSL certificates |
-| Authentication | Header-based identity (CE-02: JWT) | `x-company-id`, `x-driver-id` headers |
+| Authentication | JWT access + refresh tokens (cookie-first) | HttpOnly cookies, bearer fallback in `Authorization` |
 | Authorization | Tenant middleware | Every request verified against company_id |
 | Input | Validation & sanitization | Express-validator on all endpoints |
 | Database | Parameterized queries | Sequelize ORM (prevents SQL injection) |
@@ -914,7 +916,7 @@ graph LR
     end
 
     subgraph Database
-        MY["MySQL (Render / PlanetScale)"]
+        MY["MySQL (Aiven)"]
     end
 
     B --> CDN --> REACT
