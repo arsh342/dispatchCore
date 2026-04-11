@@ -1,4 +1,12 @@
 import { useRef, useCallback, useEffect } from "react";
+import {
+  MapPin,
+  MapPinCheckInside,
+  MapPinHouse,
+  MapPinMinusInside,
+  MapPinPlusInside,
+  MapPinXInside,
+} from "lucide-react";
 import Map, {
   Marker,
   NavigationControl,
@@ -139,76 +147,55 @@ export default function MapView({
           "#2563eb";
         const type = marker.markerType || "dot";
 
+        let PinIcon = MapPin;
+        if (type === "pickup") {
+          PinIcon = MapPinPlusInside;
+        } else if (type === "delivery") {
+          PinIcon = MapPinCheckInside;
+        } else if (type === "driver") {
+          if (marker.status === "offline") {
+            PinIcon = MapPinXInside;
+          } else if (marker.status === "busy") {
+            PinIcon = MapPinMinusInside;
+          } else {
+            PinIcon = MapPin;
+          }
+        } else {
+          if (marker.status === "offline") {
+            PinIcon = MapPinXInside;
+          } else if (marker.status === "busy") {
+            PinIcon = MapPinMinusInside;
+          } else if (marker.status === "available") {
+            PinIcon = MapPinHouse;
+          } else {
+            PinIcon = MapPin;
+          }
+        }
+
         return (
           <Marker
             key={marker.id}
             longitude={marker.lng}
             latitude={marker.lat}
-            anchor={type === "dot" ? "center" : "bottom"}
+            anchor="bottom"
             onClick={() => handleMarkerClick(marker)}
           >
-            {type === "dot" ? (
-              <div
-                className="flex items-center justify-center cursor-pointer transition-transform hover:scale-125"
-                title={marker.label}
-              >
-                {marker.status === "available" && (
-                  <span
-                    className="absolute size-6 rounded-full animate-ping opacity-25"
-                    style={{ backgroundColor: color }}
-                  />
-                )}
+            <div
+              className="relative cursor-pointer transition-transform hover:scale-110"
+              title={marker.label}
+            >
+              {marker.status === "available" && (
                 <span
-                  className="relative size-3.5 rounded-full border-2 border-white shadow-md"
+                  className="absolute left-1/2 top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full animate-ping opacity-20"
                   style={{ backgroundColor: color }}
                 />
-              </div>
-            ) : type === "driver" ? (
-              /* Driver location pin — truck icon inside a pin */
-              <div
-                className="cursor-pointer transition-transform hover:scale-110"
-                title={marker.label}
-              >
-                <svg width="32" height="42" viewBox="0 0 32 42" fill="none">
-                  <path
-                    d="M16 0C7.16 0 0 7.16 0 16c0 12 16 26 16 26s16-14 16-26C32 7.16 24.84 0 16 0z"
-                    fill={color}
-                  />
-                  <path
-                    d="M16 0C7.16 0 0 7.16 0 16c0 12 16 26 16 26s16-14 16-26C32 7.16 24.84 0 16 0z"
-                    fill="black"
-                    fillOpacity="0.1"
-                  />
-                  <circle cx="16" cy="15" r="10" fill="white" />
-                  {/* Truck icon */}
-                  <path
-                    d="M10 13h8v4h-8zM18 14h2.5l1.5 2v1h-4zM11 17.5a1 1 0 102 0 1 1 0 00-2 0zM19 17.5a1 1 0 102 0 1 1 0 00-2 0z"
-                    fill={color}
-                  />
-                </svg>
-              </div>
-            ) : (
-              /* Pickup / Delivery location pin */
-              <div
-                className="cursor-pointer transition-transform hover:scale-110"
-                title={marker.label}
-              >
-                <svg width="28" height="38" viewBox="0 0 28 38" fill="none">
-                  <path
-                    d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 24 14 24s14-13.5 14-24C28 6.27 21.73 0 14 0z"
-                    fill={color}
-                  />
-                  <circle cx="14" cy="13" r="8" fill="white" />
-                  {type === "pickup" ? (
-                    /* Up arrow for pickup */
-                    <path d="M14 8l4 5h-2.5v4h-3v-4H10l4-5z" fill={color} />
-                  ) : (
-                    /* Down arrow for delivery */
-                    <path d="M14 18l-4-5h2.5V9h3v4H18l-4 5z" fill={color} />
-                  )}
-                </svg>
-              </div>
-            )}
+              )}
+              <PinIcon
+                className="h-8 w-8 drop-shadow-[0_2px_6px_rgba(0,0,0,0.28)]"
+                style={{ color }}
+                strokeWidth={2.2}
+              />
+            </div>
           </Marker>
         );
       })}

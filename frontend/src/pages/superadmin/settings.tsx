@@ -23,10 +23,12 @@ import {
   Shield,
   User,
 } from "lucide-react";
+import LoadingPackage from "@/components/ui/loading-package";
 import {
   fetchSuperadminSettings,
   saveSuperadminSettings,
 } from "@/services/shared/settings";
+import { API_BASE } from "@/lib/api";
 import type { SuperadminSettings } from "@/types/shared/settings";
 
 const tabs: SettingsTabItem[] = [
@@ -70,7 +72,6 @@ export default function SuperAdminSettingsPage() {
   }, [setMode]);
 
   useEffect(() => {
-    const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
     fetch(`${API_BASE}/health`)
       .then((response) => response.json())
       .then((body) => setApiHealth(body.data ?? body))
@@ -109,7 +110,7 @@ export default function SuperAdminSettingsPage() {
       <div className="flex min-h-screen w-full">
         <SuperAdminSidebar />
         <div className="flex flex-1 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <LoadingPackage text="Loading platform settings..." delay={650} />
         </div>
       </div>
     );
@@ -387,7 +388,7 @@ export default function SuperAdminSettingsPage() {
               <MetricCard
                 icon={Server}
                 label="API Base URL"
-                value={import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}
+                value={API_BASE}
               />
             </div>
           </SettingsCard>
@@ -444,19 +445,19 @@ export default function SuperAdminSettingsPage() {
             <div className="grid gap-3">
               <EndpointRow
                 label="Health check"
-                value={`${import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}/health`}
+                value={`${API_BASE}/health`}
               />
               <EndpointRow
                 label="Companies"
-                value={`${import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}/companies`}
+                value={`${API_BASE}/companies`}
               />
               <EndpointRow
                 label="Drivers"
-                value={`${import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}/drivers`}
+                value={`${API_BASE}/drivers`}
               />
               <EndpointRow
                 label="Orders"
-                value={`${import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"}/orders`}
+                value={`${API_BASE}/orders`}
               />
             </div>
           </SettingsCard>

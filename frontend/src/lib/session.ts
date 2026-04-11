@@ -65,3 +65,25 @@ export function applyAuthSession(payload: AuthLoginResponse) {
     localStorage.setItem("dc_driver_name", payload.session.name);
   }
 }
+
+/**
+ * Call backend logout endpoint and clear session
+ * Note: JWT tokens are cleared server-side via httpOnly cookies
+ */
+export async function logout() {
+  try {
+    const apiBase = (import.meta.env.VITE_API_URL || "http://localhost:8000/api")
+      .trim()
+      .replace(/\/$/, "");
+    
+    await fetch(`${apiBase}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch {
+    // Continue with logout even if backend call fails
+  }
+
+  clearSessionStorage();
+}

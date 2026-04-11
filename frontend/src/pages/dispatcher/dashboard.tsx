@@ -9,7 +9,7 @@ import {
 import type { Shipment, ShipmentStatus } from "@/types/dispatcher/dashboard";
 import MapView from "@/components/map/MapView";
 import type { MapMarker, MapRoute } from "@/components/map/MapView";
-import { get } from "@/lib/api";
+import { API_BASE, get } from "@/lib/api";
 import { fetchDrivingRoute } from "@/lib/directions";
 import { buildCurvedRoute } from "@/lib/map-routes";
 import {
@@ -103,6 +103,37 @@ export default function DashboardPage() {
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [assignSubmitting, setAssignSubmitting] = useState(false);
   const [assignError, setAssignError] = useState("");
+  const [unlistingOrderId, setUnlistingOrderId] = useState<number | null>(null);
+
+  const handleUnlistOrder = async (shipment: Shipment) => {
+    if (!shipment._backendId) {
+      return;
+    }
+
+    setUnlistingOrderId(shipment._backendId);
+    try {
+      const companyId = localStorage.getItem("dc_company_id") || "";
+      const response = await fetch(`${API_BASE}/orders/${shipment._backendId}/unlist`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-company-id": companyId,
+        },
+      });
+      const body = await response.json();
+      if (!response.ok || !body.success) {
+        throw new Error(body.error?.message || "Failed to remove order from bidding");
+      }
+
+      refetch();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to remove order from bidding";
+      window.alert(message);
+    } finally {
+      setUnlistingOrderId(null);
+    }
+  };
 
   // Hooks — data fetching
   const {
@@ -723,12 +754,10 @@ export default function DashboardPage() {
                                   setAssignError("");
                                   setSelectedDriverId("");
                                   // Fetch company drivers
-                                  const API_URL =
-                                    import.meta.env.VITE_API_URL ||
-                                    "http://localhost:8000/api";
                                   const cid =
                                     localStorage.getItem("dc_company_id") || "";
-                                  fetch(`${API_URL}/drivers?type=EMPLOYED`, {
+                                  fetch(`${API_BASE}/drivers?type=EMPLOYED`, {
+                                    credentials: "include",
                                     headers: { "x-company-id": cid },
                                   })
                                     .then((r) => r.json())
@@ -743,6 +772,21 @@ export default function DashboardPage() {
                               >
                                 <UserPlus className="h-3 w-3" />
                                 Assign
+                              </button>
+                            )}
+                            {s._backendStatus === "LISTED" && s._backendId && (
+                              <button
+                                onClick={() => void handleUnlistOrder(s)}
+                                disabled={unlistingOrderId === s._backendId}
+                                title="Remove order from bidding"
+                                className="inline-flex items-center gap-1 rounded-full border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60 dark:border-red-900/40 dark:hover:bg-red-900/20"
+                              >
+                                {unlistingOrderId === s._backendId ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <X className="h-3 w-3" />
+                                )}
+                                Remove Bid
                               </button>
                             )}
                             {/* Chat with driver (when assigned) */}
@@ -1008,13 +1052,11 @@ export default function DashboardPage() {
                   }
                   setOrderSubmitting(true);
                   try {
-                    const API_URL =
-                      import.meta.env.VITE_API_URL ||
-                      "http://localhost:8000/api";
                     const companyId =
                       localStorage.getItem("dc_company_id") || "";
-                    const res = await fetch(`${API_URL}/orders`, {
+                    const res = await fetch(`${API_BASE}/orders`, {
                       method: "POST",
+                      credentials: "include",
                       headers: {
                         "Content-Type": "application/json",
                         "x-company-id": companyId,
@@ -1176,15 +1218,13 @@ export default function DashboardPage() {
                   setAssignError("");
                   setAssignSubmitting(true);
                   try {
-                    const API_URL =
-                      import.meta.env.VITE_API_URL ||
-                      "http://localhost:8000/api";
                     const backendId = assignShipment._backendId;
                     if (!backendId) throw new Error("Cannot identify order");
                     const res = await fetch(
-                      `${API_URL}/orders/${backendId}/assign`,
+                      `${API_BASE}/orders/${backendId}/assign`,
                       {
                         method: "POST",
+                        credentials: "include",
                         headers: {
                           "Content-Type": "application/json",
                           "x-company-id":

@@ -17,7 +17,7 @@ import { useParams, Link } from "react-router-dom";
 import MapView from "@/components/map/MapView";
 import type { MapMarker } from "@/components/map/MapView";
 import { useOrderTracking, useOrderMessages } from "@/hooks/realtime/useSocket";
-import { ApiRequestError } from "@/lib/api";
+import { API_BASE, ApiRequestError } from "@/lib/api";
 import {
   fetchMessages,
   sendChatMessage,
@@ -50,8 +50,6 @@ import {
   Headphones,
 } from "lucide-react";
 import LoadingPackage from "@/components/ui/loading-package";
-
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
 // ── Types ──
 

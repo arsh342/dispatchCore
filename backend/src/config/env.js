@@ -57,6 +57,14 @@ const envSchema = Joi.object({
         .falsy('false', '0')
         .default(false),
     MAINTENANCE_BYPASS_TOKEN: Joi.string().allow('').default(''),
+
+    // JWT Authentication (CE-02)
+    JWT_ACCESS_SECRET: Joi.string()
+        .min(32)
+        .default('dev-access-secret-change-in-production'),
+    JWT_REFRESH_SECRET: Joi.string()
+        .min(32)
+        .default('dev-refresh-secret-change-in-production'),
 })
     .unknown() // Allow other system env vars
     .required();
@@ -99,5 +107,9 @@ module.exports = {
     maintenance: {
         enabled: envVars.MAINTENANCE_MODE,
         bypassToken: envVars.MAINTENANCE_BYPASS_TOKEN || null,
+    },
+    jwt: {
+        accessSecret: envVars.JWT_ACCESS_SECRET,
+        refreshSecret: envVars.JWT_REFRESH_SECRET,
     },
 };

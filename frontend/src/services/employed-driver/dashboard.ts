@@ -72,9 +72,10 @@ export interface EmployedDriverUser {
 }
 
 export interface EmployedDashboardStats {
+  activeDeliveries: number;
+  pendingBids: number;
   assignedToday: number;
   completedToday: number;
-  onTimeRate: number;
   driverRating: number;
 }
 
@@ -173,16 +174,18 @@ export async function fetchEmployedDashboardStats(): Promise<EmployedDashboardSt
   try {
     const stats = await get<BackendDriverStats>("/dashboard/driver-stats");
     return {
+      activeDeliveries: stats.activeDeliveries,
+      pendingBids: stats.pendingBids,
       assignedToday: stats.activeDeliveries + stats.completedToday,
       completedToday: stats.completedToday,
-      onTimeRate: 96, // CE-03: Compute from delivery events timing
       driverRating: stats.rating,
     };
   } catch {
     return {
+      activeDeliveries: 0,
+      pendingBids: 0,
       assignedToday: 0,
       completedToday: 0,
-      onTimeRate: 0,
       driverRating: 0,
     };
   }

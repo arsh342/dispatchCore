@@ -10,6 +10,7 @@ const {
   APPEARANCE_DEFAULTS,
   VEHICLE_CAPACITY_DEFAULTS,
 } = require('../../utils/defaults');
+const { ensureDriverAccess } = require('./access');
 
 const getDrivers = async (req, res, next) => {
   try {
@@ -58,6 +59,8 @@ const getDriverById = async (req, res, next) => {
     if (!driver) {
       throw new NotFoundError('Driver');
     }
+
+    ensureDriverAccess(req, driver);
 
     return success(res, serializeDriver(driver));
   } catch (error) {
@@ -163,6 +166,8 @@ const updateDriverStatus = async (req, res, next) => {
     if (!driver) {
       throw new NotFoundError('Driver');
     }
+
+    ensureDriverAccess(req, driver);
 
     const { status } = req.body;
     const validStatuses = ['AVAILABLE', 'OFFLINE', 'BUSY'];

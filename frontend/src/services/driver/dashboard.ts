@@ -171,9 +171,8 @@ export async function fetchDriverStats(): Promise<DriverStats> {
       activeDeliveries: stats.activeDeliveries,
       completedToday: stats.completedToday,
       completedTotal: stats.completedTotal,
+      pendingBids: stats.pendingBids,
       rating: stats.rating,
-      acceptanceRate: 92,
-      onTimeRate: 96,
     };
   } catch {
     return {
@@ -182,9 +181,8 @@ export async function fetchDriverStats(): Promise<DriverStats> {
       activeDeliveries: 0,
       completedToday: 0,
       completedTotal: 0,
+      pendingBids: 0,
       rating: 0,
-      acceptanceRate: 0,
-      onTimeRate: 0,
     };
   }
 }

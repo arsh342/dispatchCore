@@ -2,6 +2,7 @@ import { useState, useEffect, Suspense, lazy } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAutoTheme } from "@/hooks/app/useAutoTheme";
 import { applyAuthSession, type AuthLoginResponse } from "@/lib/session";
+import { API_BASE, redirectForServerStatus } from "@/lib/api";
 
 import {
   AtSignIcon,
@@ -23,6 +24,8 @@ const Dithering = lazy(() =>
     default: mod.Dithering,
   })),
 );
+
+const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{8,16}$/;
 
 type AccountType = "company" | "driver";
 
@@ -79,8 +82,10 @@ export function SignupPage() {
       setError("Passwords do not match.");
       return;
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (!STRONG_PASSWORD_REGEX.test(password)) {
+      setError(
+        "Password must be 8-16 chars with uppercase, lowercase, number, and special character.",
+      );
       return;
     }
     if (!agreedToTerms) {
@@ -100,12 +105,10 @@ export function SignupPage() {
     setSubmitting(true);
 
     try {
-      const API_URL =
-        import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-
       if (accountType === "company") {
-        const res = await fetch(`${API_URL}/companies`, {
+        const res = await fetch(`${API_BASE}/companies`, {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: companyName,
@@ -124,13 +127,15 @@ export function SignupPage() {
         });
 
         const data = await res.json();
+        redirectForServerStatus(res.status);
 
         if (!res.ok || !data.success) {
           throw new Error(data.error?.message || "Registration failed");
         }
       } else {
-        const res = await fetch(`${API_URL}/drivers/signup`, {
+        const res = await fetch(`${API_BASE}/drivers/signup`, {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: fullName,
@@ -141,17 +146,20 @@ export function SignupPage() {
         });
 
         const data = await res.json();
+        redirectForServerStatus(res.status);
 
         if (!res.ok || !data.success) {
           throw new Error(data.error?.message || "Registration failed");
         }
       }
 
-      const loginRes = await fetch(`${API_URL}/auth/login`, {
+      const loginRes = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+      redirectForServerStatus(loginRes.status);
       const loginBody = await loginRes.json();
       if (!loginRes.ok || !loginBody.success || !loginBody.data) {
         throw new Error(loginBody.error?.message || "Signup succeeded but login failed");

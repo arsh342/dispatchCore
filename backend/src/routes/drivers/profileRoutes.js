@@ -10,9 +10,25 @@ const {
   updateDriverPassword,
   updateDriverVehicle,
 } = require('../../controllers/drivers/profileController');
+const { requireCompanyOrDriver } = require('../../middlewares/authorize');
+const { writeLimiter } = require('../../middlewares/rateLimiter');
 
-router.put('/:id', updateDriverValidator, validate, updateDriver);
-router.put('/:id/password', updateDriverPasswordValidator, validate, updateDriverPassword);
-router.put('/:id/vehicle', updateDriverVehicleValidator, validate, updateDriverVehicle);
+router.put('/:id', requireCompanyOrDriver, writeLimiter, updateDriverValidator, validate, updateDriver);
+router.put(
+  '/:id/password',
+  requireCompanyOrDriver,
+  writeLimiter,
+  updateDriverPasswordValidator,
+  validate,
+  updateDriverPassword,
+);
+router.put(
+  '/:id/vehicle',
+  requireCompanyOrDriver,
+  writeLimiter,
+  updateDriverVehicleValidator,
+  validate,
+  updateDriverVehicle,
+);
 
 module.exports = router;

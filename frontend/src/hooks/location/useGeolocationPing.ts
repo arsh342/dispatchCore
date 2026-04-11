@@ -6,8 +6,8 @@
  */
 
 import { useEffect, useRef } from "react";
+import { API_BASE } from "@/lib/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 const PING_INTERVAL = 15_000; // Send location every 15 seconds
 
 export function useGeolocationPing() {
@@ -48,8 +48,9 @@ export function useGeolocationPing() {
     async function sendPing() {
       if (!latestPos.current) return;
       try {
-        await fetch(`${API_URL}/location/ping`, {
+        await fetch(`${API_BASE}/location/ping`, {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
             "x-driver-id": driverId!,

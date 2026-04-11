@@ -17,6 +17,7 @@ import {
   Search,
   Loader2,
 } from "lucide-react";
+import LoadingPackage from "@/components/ui/loading-package";
 import {
   fetchConversations,
   fetchMessages,
@@ -392,7 +393,7 @@ export default function ChatPanel({
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <LoadingPackage text="Loading messages..." delay={650} />
       </div>
     );
   }

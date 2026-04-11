@@ -2,6 +2,7 @@ import { useState, useEffect, Suspense, lazy } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAutoTheme } from "@/hooks/app/useAutoTheme";
 import { applyAuthSession, type AuthLoginResponse } from "@/lib/session";
+import { API_BASE, redirectForServerStatus } from "@/lib/api";
 
 import {
   AtSignIcon,
@@ -18,6 +19,9 @@ const Dithering = lazy(() =>
 );
 
 export function AuthPage() {
+  const REMEMBER_ME_KEY = "dc_remember_me";
+  const REMEMBERED_EMAIL_KEY = "dc_remembered_email";
+
   useAutoTheme();
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
@@ -29,6 +33,7 @@ export function AuthPage() {
   // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -43,6 +48,16 @@ export function AuthPage() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const remembered = localStorage.getItem(REMEMBER_ME_KEY) === "true";
+    const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY) || "";
+
+    setRememberMe(remembered);
+    if (remembered && rememberedEmail) {
+      setEmail(rememberedEmail);
+    }
+  }, []);
+
   const handleLogin = async () => {
     setError("");
     if (!email || !password) {
@@ -51,14 +66,16 @@ export function AuthPage() {
     }
 
     setLoading(true);
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-
     try {
-      const res = await fetch(`${API_URL}/auth/login`, {
+      const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+      if (res.status !== 401) {
+        redirectForServerStatus(res.status);
+      }
       const body = await res.json();
 
       if (!res.ok || !body.success || !body.data) {
@@ -68,6 +85,15 @@ export function AuthPage() {
       }
 
       const auth = body.data as AuthLoginResponse;
+
+      if (rememberMe) {
+        localStorage.setItem(REMEMBER_ME_KEY, "true");
+        localStorage.setItem(REMEMBERED_EMAIL_KEY, email.trim());
+      } else {
+        localStorage.removeItem(REMEMBER_ME_KEY);
+        localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+      }
+
       applyAuthSession(auth);
       navigate(auth.targetRoute);
     } catch {
@@ -81,6 +107,21 @@ export function AuthPage() {
   const handleLoginSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     void handleLogin();
+  };
+
+  const handleRememberMeChange = (checked: boolean) => {
+    setRememberMe(checked);
+
+    if (!checked) {
+      const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY) || "";
+      localStorage.removeItem(REMEMBER_ME_KEY);
+      localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+
+      // Clear only prefetched remembered value, not newly typed edits.
+      if (email === rememberedEmail) {
+        setEmail("");
+      }
+    }
   };
 
   return (
@@ -208,6 +249,8 @@ export function AuthPage() {
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input
                     type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => handleRememberMeChange(e.target.checked)}
                     className="size-4 rounded border-input accent-primary bg-white dark:bg-card border appearance-none checked:appearance-auto"
                   />
                   <span className="text-muted-foreground">Remember me</span>

@@ -9,7 +9,7 @@ const { Op } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
 const { Order, Bid, Assignment, DeliveryEvent, Driver, Vehicle } = require('../models');
 const { success } = require('../utils/response');
-const { NotFoundError, ConflictError } = require('../utils/errors');
+const { NotFoundError, ConflictError, ForbiddenError } = require('../utils/errors');
 const { ORDER_STATUS } = require('../utils/constants');
 const { attachLegacyUserShape } = require('../utils/driverSerializer');
 
@@ -240,9 +240,19 @@ const getOrderBids = async (req, res, next) => {
 const updateOrderStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
+    const driverId = req.identity?.driverId ?? null;
+    if (!driverId) {
+      throw new ForbiddenError('Driver identity is required to update order status');
+    }
+
     const order = await Order.findByPk(req.params.id);
     if (!order) {
       throw new NotFoundError('Order');
+    }
+
+    const assignment = await Assignment.findOne({ where: { order_id: order.id, driver_id: driverId } });
+    if (!assignment) {
+      throw new ForbiddenError('You are not assigned to this order');
     }
     // Validate status transition
     const validTransitions = {
@@ -259,10 +269,10 @@ const updateOrderStatus = async (req, res, next) => {
     await order.update({ status });
 
     // Record delivery event for audit trail
-    const assignment = await Assignment.findOne({ where: { order_id: order.id } });
-    if (assignment) {
+    const orderAssignment = await Assignment.findOne({ where: { order_id: order.id } });
+    if (orderAssignment) {
       await DeliveryEvent.create({
-        assignment_id: assignment.id,
+        assignment_id: orderAssignment.id,
         event_type: status,
         timestamp: new Date(),
       });
@@ -270,8 +280,8 @@ const updateOrderStatus = async (req, res, next) => {
 
     // If delivered, free the driver
     if (status === 'DELIVERED') {
-      if (assignment) {
-        await Driver.update({ status: 'AVAILABLE' }, { where: { id: assignment.driver_id } });
+      if (orderAssignment) {
+        await Driver.update({ status: 'AVAILABLE' }, { where: { id: orderAssignment.driver_id } });
       }
     }
 

@@ -25,8 +25,7 @@ import {
   fetchCompanies,
   type CompanySummary,
 } from "@/services/superadmin/dashboard";
-
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+import { API_BASE } from "@/lib/api";
 
 const planColors: Record<string, string> = {
   STARTER: "text-gray-500 bg-secondary",
@@ -106,6 +105,7 @@ export default function SuperAdminCompaniesPage() {
     try {
       const res = await fetch(`${API_BASE}/companies`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(createForm),
       });

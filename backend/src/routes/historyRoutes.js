@@ -1,6 +1,9 @@
 const router = require('express').Router();
 const { getHistory, getDeliveryDetail } = require('../controllers/historyController');
 const tenantResolver = require('../middlewares/tenantResolver');
+const { requireCompanyOrDriver } = require('../middlewares/authorize');
+
+router.use(requireCompanyOrDriver);
 
 // All history routes need tenant context
 router.use(tenantResolver);

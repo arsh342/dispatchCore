@@ -33,7 +33,7 @@ const tenantResolver = (req, res, next) => {
   }
 
   if (!companyId) {
-    throw new ForbiddenError('Company context is required. Provide x-company-id header.');
+    throw new ForbiddenError('Company context is required for this operation.');
   }
 
   if (!Number.isInteger(companyId) || companyId <= 0) {

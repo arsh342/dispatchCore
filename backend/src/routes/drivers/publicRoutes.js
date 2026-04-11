@@ -4,7 +4,14 @@ const {
   createIndependentDriver: createIndependentDriverValidator,
 } = require('../../validators/driverValidator');
 const validate = require('../../middlewares/validate');
+const { authLimiter } = require('../../middlewares/rateLimiter');
 
-router.post('/signup', createIndependentDriverValidator, validate, createIndependentDriver);
+router.post(
+  '/signup',
+  authLimiter,
+  createIndependentDriverValidator,
+  validate,
+  createIndependentDriver,
+);
 
 module.exports = router;

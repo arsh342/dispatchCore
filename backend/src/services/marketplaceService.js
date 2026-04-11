@@ -16,7 +16,7 @@ const {
     ASSIGNMENT_SOURCE,
     EVENT_TYPE,
 } = require('../utils/constants');
-const { NotFoundError, ConflictError } = require('../utils/errors');
+const { NotFoundError, ConflictError, ForbiddenError } = require('../utils/errors');
 const logger = require('../config/logger');
 
 class MarketplaceService {
@@ -164,7 +164,7 @@ class MarketplaceService {
      * @param {number} bidId
      * @returns {Promise<Assignment>}
      */
-    async acceptBid(bidId) {
+    async acceptBid(bidId, companyId) {
         const transaction = await sequelize.transaction();
 
         try {
@@ -182,6 +182,10 @@ class MarketplaceService {
 
             if (bid.status !== BID_STATUS.PENDING) {
                 throw new ConflictError(`Bid is already "${bid.status}"`);
+            }
+
+            if (companyId && bid.order.company_id !== companyId) {
+                throw new ForbiddenError('You can only accept bids for your company orders');
             }
 
             if (bid.order.status !== ORDER_STATUS.LISTED) {
@@ -258,7 +262,7 @@ class MarketplaceService {
      * @param {number} bidId
      * @returns {Promise<Bid>}
      */
-    async rejectBid(bidId) {
+    async rejectBid(bidId, companyId) {
         const bid = await Bid.findByPk(bidId, {
             include: [{ model: Order, as: 'order' }],
         });
@@ -269,6 +273,10 @@ class MarketplaceService {
 
         if (bid.status !== BID_STATUS.PENDING) {
             throw new ConflictError(`Bid is already "${bid.status}"`);
+        }
+
+        if (companyId && bid.order.company_id !== companyId) {
+            throw new ForbiddenError('You can only reject bids for your company orders');
         }
 
         await bid.update({ status: BID_STATUS.REJECTED });

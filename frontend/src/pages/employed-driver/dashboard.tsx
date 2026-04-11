@@ -5,7 +5,6 @@ import { useGeolocationPing } from "@/hooks/location/useGeolocationPing";
 import {
   CheckCircle2,
   Star,
-  Timer,
   MapPin,
   ArrowRight,
   Calendar,
@@ -15,6 +14,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import LoadingPackage from "@/components/ui/loading-package";
+import { API_BASE } from "@/lib/api";
 import {
   fetchEmployedDriverUser,
   fetchEmployedDashboardStats,
@@ -131,12 +131,11 @@ export default function EmployedDriverDashboard() {
   async function updateOrderStatus(order: AssignedOrder, newStatus: string) {
     setActionLoading(`${order._backendId}-${newStatus}`);
     try {
-      const API_URL =
-        import.meta.env.VITE_API_URL || "http://localhost:8000/api";
       const cid = localStorage.getItem("dc_company_id") || "";
       const did = localStorage.getItem("dc_driver_id") || "";
-      const res = await fetch(`${API_URL}/orders/${order._backendId}/status`, {
+      const res = await fetch(`${API_BASE}/orders/${order._backendId}/status`, {
         method: "PATCH",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           "x-company-id": cid,
@@ -220,24 +219,24 @@ export default function EmployedDriverDashboard() {
                 bg: "bg-stone-100 dark:bg-stone-800/20",
               },
               {
-                label: "Completed Today",
-                value: stats?.completedToday ?? 0,
+                label: "Active Deliveries",
+                value: stats?.activeDeliveries ?? 0,
                 sub: `${rushCount} rush orders`,
                 icon: CheckCircle2,
                 color: "text-stone-600",
                 bg: "bg-stone-100 dark:bg-stone-800/20",
               },
               {
-                label: "On-Time Rate",
-                value: `${stats?.onTimeRate ?? 0}%`,
-                sub: "Last 30 days",
-                icon: Timer,
+                label: "Pending Bids",
+                value: stats?.pendingBids ?? 0,
+                sub: "Awaiting assignment",
+                icon: ClipboardList,
                 color: "text-stone-600",
                 bg: "bg-stone-100 dark:bg-stone-800/20",
               },
               {
                 label: "Driver Rating",
-                value: `${stats?.driverRating?.toFixed(1) ?? "—"} ★`,
+                value: `${stats?.driverRating?.toFixed(1) ?? "—"}`,
                 sub: "Company rating",
                 icon: Star,
                 color: "text-stone-600",
@@ -494,31 +493,28 @@ export default function EmployedDriverDashboard() {
                 </div>
               </div>
 
-              {/* Today's Performance */}
+              {/* Today's Snapshot */}
               <div className="p-5 bg-card rounded-3xl border border-border shadow-sm">
                 <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5 mb-3">
                   <Zap className="h-4 w-4 text-stone-600" />
-                  Today's Performance
+                  Today's Snapshot
                 </h3>
                 <div className="space-y-3">
                   {[
                     {
                       label: "Completed",
                       value: `${stats?.completedToday ?? 0} orders`,
-                      target: `of ${stats?.assignedToday ?? 0}`,
-                      good: true,
+                      sub: `of ${stats?.assignedToday ?? 0} assigned`,
                     },
                     {
-                      label: "On-Time Rate",
-                      value: `${stats?.onTimeRate ?? 0}%`,
-                      target: "≥ 95%",
-                      good: (stats?.onTimeRate ?? 0) >= 95,
+                      label: "Pending Bids",
+                      value: `${stats?.pendingBids ?? 0}`,
+                      sub: "awaiting assignment",
                     },
                     {
                       label: "Driver Rating",
-                      value: `${stats?.driverRating?.toFixed(1) ?? "—"} ★`,
-                      target: "≥ 4.5",
-                      good: (stats?.driverRating ?? 0) >= 4.5,
+                      value: `${stats?.driverRating?.toFixed(1) ?? "—"}`,
+                      sub: "company feedback",
                     },
                   ].map((metric) => (
                     <div
@@ -531,10 +527,8 @@ export default function EmployedDriverDashboard() {
                           {metric.value}
                         </p>
                       </div>
-                      <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full ${metric.good ? "bg-green-50 text-green-600 dark:bg-green-900/20" : "bg-red-50 text-red-500"}`}
-                      >
-                        {metric.target}
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
+                        {metric.sub}
                       </span>
                     </div>
                   ))}

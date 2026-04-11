@@ -7,6 +7,7 @@
 
 const { body, param, query } = require('express-validator');
 const { DRIVER_TYPE } = require('../utils/constants');
+const { strongPassword } = require('./passwordPolicy');
 
 const getDriver = [
     param('id')
@@ -17,10 +18,7 @@ const getDriver = [
 const createDriver = [
     body('name').isString().trim().notEmpty().withMessage('Driver name is required'),
     body('email').isEmail().withMessage('A valid email is required').normalizeEmail(),
-    body('password')
-        .isString()
-        .isLength({ min: 6 })
-        .withMessage('Password must be at least 6 characters long'),
+    strongPassword('password', 'Password'),
     body('phone').optional().isString().trim().isLength({ max: 20 }),
     body('license_number').optional().isString().trim().isLength({ max: 50 }),
     body('vehicle_type')
@@ -34,10 +32,7 @@ const createDriver = [
 const createIndependentDriver = [
     body('name').isString().trim().notEmpty().withMessage('Driver name is required'),
     body('email').isEmail().withMessage('A valid email is required').normalizeEmail(),
-    body('password')
-        .isString()
-        .isLength({ min: 6 })
-        .withMessage('Password must be at least 6 characters long'),
+    strongPassword('password', 'Password'),
     body('phone').optional().isString().trim().isLength({ max: 20 }),
     body('license_number').optional().isString().trim().isLength({ max: 50 }),
 ];
@@ -64,10 +59,7 @@ const updateDriver = [
 const updateDriverPassword = [
     param('id').isInt({ min: 1 }).withMessage('Driver ID must be a positive integer'),
     body('current_password').isString().notEmpty().withMessage('Current password is required'),
-    body('new_password')
-        .isString()
-        .isLength({ min: 6 })
-        .withMessage('New password must be at least 6 characters long'),
+    strongPassword('new_password', 'New password'),
 ];
 
 const updateDriverVehicle = [

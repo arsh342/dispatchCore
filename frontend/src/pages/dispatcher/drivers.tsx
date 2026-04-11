@@ -15,6 +15,7 @@ import {
   Truck,
 } from "lucide-react";
 import LoadingPackage from "@/components/ui/loading-package";
+import { API_BASE } from "@/lib/api";
 
 /* ─── Types ─── */
 interface DriverUser {
@@ -23,6 +24,7 @@ interface DriverUser {
   email: string;
   phone: string | null;
 }
+const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{8,16}$/;
 
 interface DriverRecord {
   id: number;
@@ -65,13 +67,14 @@ export default function DriversPage() {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+  const API_URL = API_BASE;
   const companyId = localStorage.getItem("dc_company_id") || "";
 
   const fetchDrivers = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/drivers?type=EMPLOYED`, {
+        credentials: "include",
         headers: { "x-company-id": companyId },
       });
       const data = await res.json();
@@ -93,10 +96,17 @@ export default function DriversPage() {
       setFormError("Name, email, and password are required.");
       return;
     }
+    if (!STRONG_PASSWORD_REGEX.test(form.password)) {
+      setFormError(
+        "Password must be 8-16 chars with uppercase, lowercase, number, and special character."
+      );
+      return;
+    }
     setFormSubmitting(true);
     try {
       const res = await fetch(`${API_URL}/drivers`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           "x-company-id": companyId,
@@ -320,7 +330,7 @@ export default function DriversPage() {
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     type="password"
-                    placeholder="At least 6 characters"
+                    placeholder="8-16 chars, mixed case, number, symbol"
                     value={form.password}
                     onChange={(e) =>
                       setForm((p) => ({ ...p, password: e.target.value }))

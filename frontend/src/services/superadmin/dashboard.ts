@@ -1,11 +1,11 @@
+import { API_BASE } from "@/lib/api";
+
 /**
  * SuperAdmin Dashboard Service
  *
  * Fetches platform-wide KPIs, company list, driver list, and order list
  * for the superadmin views. These endpoints don't need tenant scoping.
  */
-
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
 export interface PlatformStats {
   totalCompanies: number;
@@ -59,7 +59,7 @@ export interface OrderSummary {
 
 /** Fetch platform-wide statistics */
 export async function fetchPlatformStats(): Promise<PlatformStats> {
-  const res = await fetch(`${API_BASE}/superadmin/stats`);
+  const res = await fetch(`${API_BASE}/superadmin/stats`, { credentials: "include" });
   const body = await res.json();
   if (!res.ok || !body.success)
     throw new Error(body.error?.message ?? "Failed to fetch stats");
@@ -68,7 +68,7 @@ export async function fetchPlatformStats(): Promise<PlatformStats> {
 
 /** Fetch all companies with counts */
 export async function fetchCompanies(): Promise<CompanySummary[]> {
-  const res = await fetch(`${API_BASE}/superadmin/companies`);
+  const res = await fetch(`${API_BASE}/superadmin/companies`, { credentials: "include" });
   const body = await res.json();
   if (!res.ok || !body.success)
     throw new Error(body.error?.message ?? "Failed to fetch companies");
@@ -77,7 +77,7 @@ export async function fetchCompanies(): Promise<CompanySummary[]> {
 
 /** Fetch all drivers across the platform */
 export async function fetchAllDrivers(): Promise<DriverSummary[]> {
-  const res = await fetch(`${API_BASE}/superadmin/drivers`);
+  const res = await fetch(`${API_BASE}/superadmin/drivers`, { credentials: "include" });
   const body = await res.json();
   if (!res.ok || !body.success)
     throw new Error(body.error?.message ?? "Failed to fetch drivers");
@@ -97,7 +97,9 @@ export async function fetchAllOrders(params?: {
   if (params?.status) query.set("status", params.status);
   if (params?.page) query.set("page", String(params.page));
   if (params?.limit) query.set("limit", String(params.limit));
-  const res = await fetch(`${API_BASE}/superadmin/orders?${query.toString()}`);
+  const res = await fetch(`${API_BASE}/superadmin/orders?${query.toString()}`, {
+    credentials: "include",
+  });
   const body = await res.json();
   if (!res.ok || !body.success)
     throw new Error(body.error?.message ?? "Failed to fetch orders");

@@ -15,6 +15,7 @@ import LoadingPackage from "@/components/ui/loading-package";
 import { FullScreenCalendar } from "@/components/ui/fullscreen-calendar";
 import { isSameDay, format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import { API_BASE } from "@/lib/api";
 
 /* ─── Helpers ─── */
 
@@ -83,11 +84,10 @@ export default function EmployedDriverSchedulePage() {
     async function fetchOrders() {
       setLoading(true);
       try {
-        const API_URL =
-          import.meta.env.VITE_API_URL || "http://localhost:8000/api";
         const cid = localStorage.getItem("dc_company_id") || "";
         const did = localStorage.getItem("dc_driver_id") || "";
-        const res = await fetch(`${API_URL}/orders?for_driver=${did}&limit=200`, {
+        const res = await fetch(`${API_BASE}/orders?for_driver=${did}&limit=200`, {
+          credentials: "include",
           headers: { "x-company-id": cid, "x-driver-id": did },
         });
         const data = await res.json();

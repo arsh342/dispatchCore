@@ -1,7 +1,7 @@
 import { motion, type Variants } from "framer-motion";
 import { ArrowLeftIcon, CloudOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ErrorDithering } from "@/components/visual/error-dithering";
 
 const fadeCenter: Variants = {
@@ -34,6 +34,8 @@ const cloudVariants: Variants = {
 
 export default function ServiceUnavailablePage() {
   const navigate = useNavigate();
+  const { search } = useLocation();
+  const isRestarting = new URLSearchParams(search).get("reason") === "restarting";
 
   return (
     <div className="flex flex-col justify-center items-center px-4 h-[100vh] bg-background relative overflow-hidden">
@@ -74,15 +76,16 @@ export default function ServiceUnavailablePage() {
             className="mb-4 text-3xl md:text-5xl font-semibold tracking-tight text-foreground"
             variants={fadeCenter}
           >
-            Under maintenance
+            {isRestarting ? "Server restarting" : "Under maintenance"}
           </motion.h1>
 
           <motion.p
             className="mx-auto mb-10 max-w-md text-base md:text-lg text-muted-foreground/70"
             variants={fadeCenter}
           >
-            We're performing scheduled maintenance to improve your experience.
-            We'll be back shortly — thanks for your patience.
+            {isRestarting
+              ? "Our backend is waking up on free-tier hosting. Please wait 30-60 seconds, then refresh this page."
+              : "We're performing scheduled maintenance to improve your experience. We'll be back shortly — thanks for your patience."}
           </motion.p>
 
           <motion.div

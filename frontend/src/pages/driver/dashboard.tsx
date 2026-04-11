@@ -26,11 +26,11 @@ import {
   Clock,
   XCircle,
   Navigation,
-  Zap,
   MessageSquare,
 } from "lucide-react";
 import LoadingPackage from "@/components/ui/loading-package";
 import { formatINR } from "@/lib/currency";
+import { API_BASE } from "@/lib/api";
 
 /* ─── Status styling ─── */
 const deliveryStatusConfig: Record<string, { label: string; color: string }> = {
@@ -193,17 +193,17 @@ export default function DriverDashboardPage() {
                   },
                   {
                     label: "Driver Rating",
-                    value: `${stats?.rating ?? 0} ★`,
+                    value: `${stats?.rating ?? 0}`,
                     sub: `${stats?.completedTotal ?? 0} total deliveries`,
                     icon: Star,
                     color: "text-stone-600",
                     bg: "bg-stone-100 dark:bg-stone-800/20",
                   },
                   {
-                    label: "Performance",
-                    value: `${stats?.onTimeRate ?? 0}%`,
-                    sub: `${stats?.acceptanceRate ?? 0}% acceptance`,
-                    icon: Zap,
+                    label: "Pending Bids",
+                    value: stats?.pendingBids ?? 0,
+                    sub: `${bids?.length ?? 0} recent bids`,
+                    icon: Gavel,
                     color: "text-stone-600",
                     bg: "bg-stone-100 dark:bg-stone-800/20",
                   },
@@ -370,18 +370,16 @@ export default function DriverDashboardPage() {
                                     : del.status === "EN_ROUTE"
                                       ? "DELIVERED"
                                       : "PICKED_UP";
-                                const API_URL =
-                                  import.meta.env.VITE_API_URL ||
-                                  "http://localhost:8000/api";
                                 const cid =
                                   localStorage.getItem("dc_company_id") || "";
                                 const did =
                                   localStorage.getItem("dc_driver_id") || "";
                                 try {
                                   const res = await fetch(
-                                    `${API_URL}/orders/${backendId}/status`,
+                                    `${API_BASE}/orders/${backendId}/status`,
                                     {
                                       method: "PATCH",
+                                      credentials: "include",
                                       headers: {
                                         "Content-Type": "application/json",
                                         "x-company-id": cid,

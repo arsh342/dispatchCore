@@ -13,7 +13,7 @@ const {
   Company,
 } = require('../models');
 const { success } = require('../utils/response');
-const { NotFoundError } = require('../utils/errors');
+const { NotFoundError, ForbiddenError } = require('../utils/errors');
 const { ORDER_STATUS } = require('../utils/constants');
 
 // With `underscored: true` in Sequelize config, timestamps are always snake_case.
@@ -27,18 +27,10 @@ const pingLocation = async (req, res, next) => {
     const { lat, lng, speed, heading } = req.body;
     const locationService = req.app.get('locationService');
 
-    // CE-02: Replace with driver ID from JWT
-    const driverId = parseInt(req.headers['x-driver-id'], 10);
+    const driverId = req.identity?.driverId ?? null;
 
-    if (!driverId || isNaN(driverId)) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Valid x-driver-id header is required',
-          status: 400,
-        },
-      });
+    if (!driverId) {
+      throw new ForbiddenError('Driver identity is required');
     }
 
     // Validate driver exists before inserting location log
@@ -203,21 +195,13 @@ const trackOrder = async (req, res, next) => {
  */
 const getDriverLocations = async (req, res, next) => {
   try {
-    const companyId = req.headers['x-company-id'];
+    const companyId = req.tenantId ?? req.identity?.companyId ?? null;
 
     if (!companyId) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'x-company-id header is required',
-          status: 400,
-        },
-      });
+      throw new ForbiddenError('Company context is required to view driver locations');
     }
 
     // Single query: join drivers with their latest location log (avoids N+1)
-    const parsedCompanyId = parseInt(companyId, 10);
     const locations = await sequelize.query(
       `SELECT d.id AS driverId, d.name, d.status,
               l.lat, l.lng, l.speed, l.heading, l.recorded_at AS recordedAt
@@ -229,7 +213,7 @@ const getDriverLocations = async (req, res, next) => {
          LIMIT 1
        )
        WHERE d.company_id = :companyId`,
-      { replacements: { companyId: parsedCompanyId }, type: QueryTypes.SELECT },
+      { replacements: { companyId }, type: QueryTypes.SELECT },
     );
 
     const formatted = locations.map((row) => ({

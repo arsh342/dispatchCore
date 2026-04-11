@@ -6,9 +6,8 @@ export interface DriverStats {
   activeDeliveries: number;
   completedToday: number;
   completedTotal: number;
+  pendingBids: number;
   rating: number;
-  acceptanceRate: number;
-  onTimeRate: number;
 }
 
 export interface DriverUser {

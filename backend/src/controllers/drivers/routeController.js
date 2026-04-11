@@ -1,4 +1,6 @@
 const { success } = require('../../utils/response');
+const { DriverRoute } = require('../../models');
+const { ForbiddenError, NotFoundError } = require('../../utils/errors');
 
 const registerRoute = async (req, res, next) => {
   try {
@@ -58,7 +60,19 @@ const getMyRoutes = async (req, res, next) => {
 const deactivateRoute = async (req, res, next) => {
   try {
     const routeMatchingService = req.app.get('routeMatchingService');
-    await routeMatchingService.deactivateRoute(parseInt(req.params.routeId, 10));
+    const routeId = parseInt(req.params.routeId, 10);
+    const driverId = req.identity?.driverId ?? null;
+
+    const route = await DriverRoute.findByPk(routeId);
+    if (!route) {
+      throw new NotFoundError('Route');
+    }
+
+    if (!driverId || route.driver_id !== driverId) {
+      throw new ForbiddenError('You can only deactivate your own routes');
+    }
+
+    await routeMatchingService.deactivateRoute(routeId);
     return success(res, { message: 'Route deactivated' });
   } catch (error) {
     next(error);

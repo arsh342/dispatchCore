@@ -16,6 +16,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { logout } from "@/lib/session";
 
 
 
@@ -32,8 +33,8 @@ export function SuperAdminSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.clear();
+  const handleLogout = async () => {
+    await logout();
     navigate("/");
   };
 

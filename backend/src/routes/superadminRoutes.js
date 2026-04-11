@@ -16,6 +16,9 @@ const {
 } = require('../controllers/superadminController');
 const { updateSettings: updateSettingsValidator } = require('../validators/superadminValidator');
 const validate = require('../middlewares/validate');
+const { requireSuperadmin } = require('../middlewares/authorize');
+
+router.use(requireSuperadmin);
 
 // GET /api/superadmin/stats      — Platform-wide KPIs
 router.get('/stats', getPlatformStats);
