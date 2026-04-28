@@ -148,8 +148,18 @@ function ParallaxImage({
     offset: ["start end", "end start"],
   });
   const y = useTransform(scrollYProgress, [0, 1], ["-15%", "15%"]);
+
   return (
-    <div ref={ref} className={`overflow-hidden relative ${className}`} style={{ willChange: "transform", transform: "translateZ(0)" }}>
+    <div
+      ref={ref}
+      className={`overflow-hidden rounded-3xl relative ${className}`}
+      style={{
+        willChange: "transform",
+        transform: "translateZ(0)",
+        borderRadius: "1.5rem",
+        clipPath: "inset(0 round 1.5rem)",
+      }}
+    >
       {error ? (
         /* Accent placeholder when image fails to load */
         <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 flex items-center justify-center min-h-[200px]">

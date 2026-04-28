@@ -2,11 +2,15 @@
  * useGeolocationPing Hook
  *
  * Uses the browser Geolocation API to track the driver's real-time
- * location and send periodic pings to POST /api/location/ping.
+ * location and write periodic updates to Firebase RTDB.
+ *
+ * Replaces the old REST-based POST /api/location/ping approach.
+ * RTDB writes are faster and don't require a round-trip through Express.
  */
 
 import { useEffect, useRef } from "react";
-import { API_BASE } from "@/lib/api";
+import { ref, set, serverTimestamp } from "firebase/database";
+import { rtdb } from "@/lib/firebase";
 
 const PING_INTERVAL = 15_000; // Send location every 15 seconds
 
@@ -27,7 +31,6 @@ export function useGeolocationPing() {
     }
 
     const driverId = localStorage.getItem("dc_driver_id");
-    const companyId = localStorage.getItem("dc_company_id");
     if (!driverId) return;
 
     // Watch position — updates latestPos ref on every change
@@ -44,24 +47,17 @@ export function useGeolocationPing() {
       { enableHighAccuracy: true, maximumAge: 10_000, timeout: 5_000 },
     );
 
-    // Send a ping every PING_INTERVAL ms
+    // Write location to Firebase RTDB every PING_INTERVAL ms
     async function sendPing() {
       if (!latestPos.current) return;
       try {
-        await fetch(`${API_BASE}/location/ping`, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            "x-driver-id": driverId!,
-            ...(companyId ? { "x-company-id": companyId } : {}),
-          },
-          body: JSON.stringify({
-            lat: latestPos.current.lat,
-            lng: latestPos.current.lng,
-            speed: latestPos.current.speed ?? 0,
-            heading: latestPos.current.heading ?? 0,
-          }),
+        const locationRef = ref(rtdb, `locations/${driverId}`);
+        await set(locationRef, {
+          lat: latestPos.current.lat,
+          lng: latestPos.current.lng,
+          speed: latestPos.current.speed ?? 0,
+          heading: latestPos.current.heading ?? 0,
+          updatedAt: serverTimestamp(),
         });
       } catch {
         // Silently fail — will retry on next interval

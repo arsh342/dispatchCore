@@ -6,7 +6,7 @@
  * to prevent race conditions when two dispatchers assign the same order.
  *
  * Flow: Dispatcher assigns → Lock order & driver → Create assignment →
- *       Log delivery event → Emit WebSocket events
+ *       Log delivery event → Emit RTDB events
  */
 
 const {
@@ -28,8 +28,8 @@ const { NotFoundError, ConflictError, LockTimeoutError } = require('../utils/err
 const logger = require('../config/logger');
 
 class AssignmentService {
-  constructor(io) {
-    this.io = io; // Socket.io instance (injected)
+  constructor(realtime) {
+    this.realtime = realtime; // RealtimeService instance (injected)
   }
 
   /**
@@ -143,7 +143,7 @@ class AssignmentService {
         'Order assigned successfully',
       );
 
-      // Emit real-time events
+      // Emit real-time events via Firebase RTDB
       this._emitAssignmentEvents(assignment, order, driver);
 
       return assignment;
@@ -210,23 +210,23 @@ class AssignmentService {
   }
 
   /**
-   * Emit WebSocket events after a successful assignment.
+   * Emit RTDB events after a successful assignment.
    * @private
    */
   _emitAssignmentEvents(assignment, order, driver) {
-    if (!this.io) {
+    if (!this.realtime) {
       return;
     }
 
     // Notify dispatchers in the company
-    this.io.to(`company:${order.company_id}:dispatchers`).emit('assignment:created', {
+    this.realtime.emitToCompany(order.company_id, 'assignment:created', {
       assignmentId: assignment.id,
       orderId: order.id,
       driverId: driver.id,
     });
 
     // Notify the driver directly
-    this.io.to(`driver:${driver.id}`).emit('assignment:new', {
+    this.realtime.emitToDriver(driver.id, 'assignment:new', {
       assignment: {
         id: assignment.id,
         orderId: order.id,

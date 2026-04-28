@@ -20,8 +20,8 @@ const { NotFoundError, ConflictError, ForbiddenError } = require('../utils/error
 const logger = require('../config/logger');
 
 class MarketplaceService {
-    constructor(io) {
-        this.io = io;
+    constructor(realtime) {
+        this.realtime = realtime; // RealtimeService instance (injected)
     }
 
     /**
@@ -246,7 +246,7 @@ class MarketplaceService {
                 'Bid accepted and assignment created',
             );
 
-            // Emit events
+            // Emit events via RTDB
             this._emitBidResult(bid, assignment);
 
             return assignment;
@@ -283,8 +283,8 @@ class MarketplaceService {
 
         logger.info({ bidId }, 'Bid rejected');
 
-        if (this.io) {
-            this.io.to(`driver:${bid.driver_id}`).emit('bid:rejected', {
+        if (this.realtime) {
+            this.realtime.emitToDriver(bid.driver_id, 'bid:rejected', {
                 bidId,
                 orderId: bid.order_id,
             });
@@ -310,9 +310,9 @@ class MarketplaceService {
             if (bid.id !== acceptedBidId) {
                 await bid.update({ status: BID_STATUS.REJECTED }, { transaction });
 
-                // Notify rejected drivers
-                if (this.io) {
-                    this.io.to(`driver:${bid.driver_id}`).emit('bid:rejected', {
+                // Notify rejected drivers via RTDB
+                if (this.realtime) {
+                    this.realtime.emitToDriver(bid.driver_id, 'bid:rejected', {
                         bidId: bid.id,
                         orderId,
                     });
@@ -322,16 +322,16 @@ class MarketplaceService {
     }
 
     /**
-     * Emit WebSocket events after a bid is accepted.
+     * Emit RTDB events after a bid is accepted.
      * @private
      */
     _emitBidResult(bid, assignment) {
-        if (!this.io) {
+        if (!this.realtime) {
             return;
         }
 
         // Notify the winning driver
-        this.io.to(`driver:${bid.driver_id}`).emit('bid:accepted', {
+        this.realtime.emitToDriver(bid.driver_id, 'bid:accepted', {
             bidId: bid.id,
             orderId: bid.order_id,
             assignment: {
@@ -341,7 +341,7 @@ class MarketplaceService {
         });
 
         // Notify dispatchers
-        this.io.to(`company:${bid.order.company_id}:dispatchers`).emit('assignment:created', {
+        this.realtime.emitToCompany(bid.order.company_id, 'assignment:created', {
             assignmentId: assignment.id,
             orderId: bid.order_id,
             driverId: bid.driver_id,
@@ -350,14 +350,14 @@ class MarketplaceService {
     }
 
     /**
-     * Emit to the marketplace room for a given company.
+     * Emit to the marketplace feed for a given company via RTDB.
      * @private
      */
     _emitToMarketplace(companyId, event, data) {
-        if (!this.io) {
+        if (!this.realtime) {
             return;
         }
-        this.io.to(`company:${companyId}:marketplace`).emit(event, data);
+        this.realtime.emitToMarketplace(companyId, event, data);
     }
 }
 

@@ -27,3 +27,6 @@ build/
 
 # Coverage
 coverage/
+
+# Firebase
+firebase-service-account.json

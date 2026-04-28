@@ -58,13 +58,20 @@ const envSchema = Joi.object({
         .default(false),
     MAINTENANCE_BYPASS_TOKEN: Joi.string().allow('').default(''),
 
-    // JWT Authentication (CE-02)
+    // JWT Authentication (CE-02) — kept for superadmin bypass
     JWT_ACCESS_SECRET: Joi.string()
         .min(32)
         .default('dev-access-secret-change-in-production'),
     JWT_REFRESH_SECRET: Joi.string()
         .min(32)
         .default('dev-refresh-secret-change-in-production'),
+
+    // Firebase
+    FIREBASE_SERVICE_ACCOUNT_PATH: Joi.string()
+        .default('./firebase-service-account.json'),
+    FIREBASE_DATABASE_URL: Joi.string()
+        .uri({ scheme: ['https'] })
+        .required(),
 })
     .unknown() // Allow other system env vars
     .required();
@@ -111,5 +118,9 @@ module.exports = {
     jwt: {
         accessSecret: envVars.JWT_ACCESS_SECRET,
         refreshSecret: envVars.JWT_REFRESH_SECRET,
+    },
+    firebase: {
+        serviceAccountPath: envVars.FIREBASE_SERVICE_ACCOUNT_PATH,
+        databaseUrl: envVars.FIREBASE_DATABASE_URL,
     },
 };

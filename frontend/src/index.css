@@ -66,8 +66,6 @@
   --destructive-foreground: #ffffff;
   --sidebar-accent-foreground: #ea580c;
   --sidebar-primary-foreground: #ffffff;
-  --navbar-bg: #ffffff3b;
-  --navbar-border: #e7e5e41a;
 
   /* Status tokens */
   --status-transit: #2563eb;
@@ -129,8 +127,6 @@
   --destructive-foreground: #ffffff;
   --sidebar-accent-foreground: #fb923c;
   --sidebar-primary-foreground: #0c0a09;
-  --navbar-bg: #1818181a;
-  --navbar-border: #1c191748;
 
   /* Status tokens — dark mode */
   --status-transit: #60a5fa;

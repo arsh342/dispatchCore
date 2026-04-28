@@ -1,21 +1,19 @@
 /**
- * Shared API Client
+ * Shared API Client (Firebase Auth)
  *
  * Central HTTP client for all frontend ↔ backend communication.
  * Unwraps the backend response envelope: { success, data, meta }
- * 
- * Includes JWT auto-refresh logic:
- * - If 401 response received, attempts to refresh token
- * - On successful refresh, retries original request
- * - If refresh fails, user is sent to login page
+ *
+ * Auth tokens are now managed by Firebase SDK:
+ * - Firebase auto-refreshes ID tokens (~1hr expiry)
+ * - getIdentityHeaders() fetches the current token on each request
+ * - No manual refresh logic needed
  */
 
-import { getIdentityHeaders, getRefreshToken, setAuthTokens } from "@/lib/session";
+import { getIdentityHeaders } from "@/lib/session";
 
 // ── Config ──
 
-let isRefreshing = false;
-let refreshPromise: Promise<boolean> | null = null;
 const LAST_NON_ERROR_ROUTE_KEY = "dc_last_non_error_route";
 
 function isErrorRoutePath(pathname: string): boolean {
@@ -76,58 +74,6 @@ function resolveApiBaseUrl(): string {
 
 const API_BASE = resolveApiBaseUrl();
 
-/**
- * Attempt to refresh JWT access token using refresh token
- * @returns true on success, false on failure
- */
-async function refreshAccessToken(): Promise<boolean> {
-  if (isRefreshing && refreshPromise) {
-    return refreshPromise;
-  }
-
-  isRefreshing = true;
-  refreshPromise = (async () => {
-    try {
-      const res = await fetch(`${API_BASE}/auth/refresh`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getIdentityHeaders(),
-        },
-        credentials: "include", // Send cookies
-        body: JSON.stringify({ refreshToken: getRefreshToken() }),
-      });
-
-      let body: { data?: { tokens?: { accessToken?: string; refreshToken?: string } } } = {};
-      try {
-        body = await res.json();
-      } catch {
-        body = {};
-      }
-
-      if (body.data?.tokens) {
-        setAuthTokens(body.data.tokens);
-      }
-
-      if (res.ok) {
-        isRefreshing = false;
-        refreshPromise = null;
-        return true;
-      } else {
-        // Refresh failed — redirect to login
-        window.location.assign("/login");
-        return false;
-      }
-    } catch {
-      // Network error — redirect to login
-      window.location.assign("/login");
-      return false;
-    }
-  })();
-
-  return refreshPromise;
-}
-
 function routeForServerStatus(status: number): string | null {
   if (status === 401) return "/401";
   if (status === 403) return "/403";
@@ -187,18 +133,19 @@ export class ApiRequestError extends Error {
 async function request<T>(
   endpoint: string,
   options: RequestInit = {},
-  retryCount = 0,
 ): Promise<{ data: T; meta?: ApiResponse<T>["meta"] }> {
   const url = `${API_BASE}${endpoint}`;
+
+  // Get auth headers (includes Firebase ID token)
+  const identityHeaders = await getIdentityHeaders();
 
   let res: Response;
   try {
     res = await fetch(url, {
       ...options,
-      credentials: "include", // Send/receive cookies (JWT tokens)
       headers: {
         "Content-Type": "application/json",
-        ...getIdentityHeaders(),
+        ...identityHeaders,
         ...options.headers,
       },
     });
@@ -222,14 +169,11 @@ async function request<T>(
     // Non-JSON responses still need server-status routing.
   }
 
-  // Handle 401 Unauthorized — attempt token refresh
-  if (res.status === 401 && retryCount === 0) {
-    const refreshed = await refreshAccessToken();
-    if (refreshed) {
-      // Retry the original request with new token
-      return request<T>(endpoint, options, 1);
-    }
-    // If refresh failed, fall through to error handling below
+  // Handle 401 — Firebase token may be invalid or user signed out
+  if (res.status === 401) {
+    rememberLastNonErrorRoute();
+    window.location.assign("/login");
+    throw new ApiRequestError("UNAUTHORIZED", "Session expired", 401);
   }
 
   if (!res.ok || !body.success) {

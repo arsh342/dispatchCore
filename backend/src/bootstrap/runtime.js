@@ -1,38 +1,30 @@
-const { Server: SocketIO } = require('socket.io');
-const env = require('../config/env');
+/**
+ * Runtime Bootstrap
+ *
+ * Initializes runtime services and registers shutdown handlers.
+ * Socket.io has been replaced by Firebase RTDB (RealtimeService).
+ */
 
 const AssignmentService = require('../services/assignmentService');
 const MarketplaceService = require('../services/marketplaceService');
 const LocationService = require('../services/locationService');
 const RouteMatchingService = require('../services/routeMatchingService');
 const HistoryService = require('../services/historyService');
+const RealtimeService = require('../services/realtimeService');
 
-const { initializeSocket } = require('../sockets');
+/**
+ * Register all runtime services on the Express app.
+ * Services that previously depended on Socket.io now receive
+ * a RealtimeService instance (Firebase RTDB) instead.
+ */
+function registerServices(app) {
+  const realtime = new RealtimeService();
 
-const wsCorsOrigins = env.wsCorsOrigin
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
-function createSocketServer(server) {
-  const io = new SocketIO(server, {
-    cors: {
-      origin: wsCorsOrigins,
-      methods: ['GET', 'POST'],
-    },
-    pingTimeout: 60000,
-    pingInterval: 25000,
-  });
-
-  initializeSocket(io);
-  return io;
-}
-
-function registerServices(app, io) {
   const services = {
-    assignmentService: new AssignmentService(io),
-    marketplaceService: new MarketplaceService(io),
-    locationService: new LocationService(io),
+    realtimeService: realtime,
+    assignmentService: new AssignmentService(realtime),
+    marketplaceService: new MarketplaceService(realtime),
+    locationService: new LocationService(realtime),
     routeMatchingService: new RouteMatchingService(),
     historyService: new HistoryService(),
   };
@@ -41,13 +33,13 @@ function registerServices(app, io) {
     app.set(key, service);
   });
 
-  app.set('io', io);
-  io.locationService = services.locationService;
-
   return services;
 }
 
-function registerShutdownHandlers({ server, io, sequelize, logger }) {
+/**
+ * Register graceful shutdown handlers.
+ */
+function registerShutdownHandlers({ server, sequelize, logger }) {
   let isShuttingDown = false;
   let forceExitTimer = null;
 
@@ -74,11 +66,6 @@ function registerShutdownHandlers({ server, io, sequelize, logger }) {
       });
       logger.info('HTTP server closed');
 
-      await new Promise((resolve) => {
-        io.close(() => resolve());
-      });
-      logger.info('WebSocket connections closed');
-
       await sequelize.close();
       logger.info('Database pool drained');
 
@@ -97,7 +84,6 @@ function registerShutdownHandlers({ server, io, sequelize, logger }) {
 }
 
 module.exports = {
-  createSocketServer,
   registerServices,
   registerShutdownHandlers,
 };

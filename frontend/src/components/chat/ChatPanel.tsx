@@ -28,7 +28,7 @@ import {
   type ChatMsg,
   type ChatChannel,
 } from "@/services/shared/messaging";
-import { useOrderMessages } from "@/hooks/realtime/useSocket";
+import { useOrderMessages } from "@/hooks/realtime/useRealtime";
 import { ApiRequestError } from "@/lib/api";
 
 // ── Props ──
@@ -169,7 +169,7 @@ export default function ChatPanel({
     } finally {
       setLoading(false);
     }
-  }, [role, trackingCode, activeBucket, activeKey]);
+  }, [role, trackingCode, activeBucket, activeKey, initialKey]);
 
   useEffect(() => {
     loadConversations();

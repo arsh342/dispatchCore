@@ -397,10 +397,10 @@ const sendMessage = async (req, res, next) => {
       time: message.created_at?.toISOString() || new Date().toISOString(),
     };
 
-    // Emit via Socket.io — room is scoped to order+channel
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`order:${orderId}:chat:${channel}`).emit('message:new', formatted);
+    // Emit via Firebase RTDB for real-time delivery
+    const realtimeService = req.app.get('realtimeService');
+    if (realtimeService) {
+      realtimeService.emitChatMessage(orderId, channel, formatted);
     }
 
     return success(res, formatted, null, 201);

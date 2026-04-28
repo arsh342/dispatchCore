@@ -21,14 +21,14 @@
     "express": "^4.22.1",
     "express-rate-limit": "^8.2.1",
     "express-validator": "^7.3.1",
+    "firebase-admin": "^13.8.0",
     "helmet": "^8.1.0",
     "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "mysql2": "^3.18.2",
-    "sequelize": "^6.37.7",
-    "socket.io": "^4.8.3",
-    "uuid": "^13.0.0",
+    "sequelize": "^6.37.8",
+    "uuid": "^14.0.0",
     "winston": "^3.19.0"
   },
   "devDependencies": {

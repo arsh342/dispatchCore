@@ -1,11 +1,11 @@
 /**
  * Server Entry Point
  *
- * Creates the HTTP server, attaches Socket.io, and mounts Express.
+ * Creates the HTTP server and mounts Express.
  * Initializes runtime services and graceful shutdown handling.
  *
- * Also handles graceful shutdown — closes sockets, drains DB pool,
- * and stops accepting new connections before exiting.
+ * Socket.io has been replaced by Firebase RTDB — no WebSocket
+ * server is needed. Real-time events flow through Firebase.
  */
 
 const http = require('http');
@@ -15,14 +15,16 @@ const env = require('./src/config/env');
 const logger = require('./src/config/logger');
 const { sequelize } = require('./src/models');
 const {
-  createSocketServer,
   registerServices,
   registerShutdownHandlers,
 } = require('./src/bootstrap/runtime');
 
+// Ensure Firebase is initialized on startup
+require('./src/config/firebase');
+
 /**
  * Authenticate infrastructure dependencies, compose runtime services,
- * and begin accepting HTTP/WebSocket traffic.
+ * and begin accepting HTTP traffic.
  */
 const startServer = async () => {
   try {
@@ -30,10 +32,9 @@ const startServer = async () => {
     logger.info('Database authenticated');
 
     const server = http.createServer(app);
-    const io = createSocketServer(server);
-    logger.info('WebSocket initialized');
 
-    registerServices(app, io);
+    registerServices(app);
+    logger.info('Runtime services initialized');
 
     server.on('error', (error) => {
       logger.error({ err: error }, 'HTTP server failed');
@@ -44,7 +45,7 @@ const startServer = async () => {
       logger.info({ port: env.port, nodeEnv: env.nodeEnv }, 'Server started');
     });
 
-    registerShutdownHandlers({ server, io, sequelize, logger });
+    registerShutdownHandlers({ server, sequelize, logger });
   } catch (error) {
     logger.error({ err: error }, 'Failed to start server');
     process.exit(1);

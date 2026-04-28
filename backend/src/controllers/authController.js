@@ -1,101 +1,57 @@
+/**
+ * Auth Controller (Firebase)
+ *
+ * Handles post-authentication session setup.
+ * The actual authentication (email/password, Google, phone) happens
+ * client-side via the Firebase SDK. The client then sends the
+ * Firebase ID token to these endpoints to:
+ *
+ *   1. Link the Firebase user to a MySQL Company/Driver record
+ *   2. Set custom claims (role, companyId, driverId) on the Firebase user
+ *   3. Return session data for the frontend
+ *
+ * Superadmin bypass: If the Firebase user's email matches the
+ * SUPERADMIN_EMAIL env var, they are granted superadmin access.
+ */
+
 const crypto = require('crypto');
 const { Company, Driver } = require('../models');
 const { success } = require('../utils/response');
-const { UnauthorizedError } = require('../utils/errors');
+const { UnauthorizedError, NotFoundError } = require('../utils/errors');
+const { auth } = require('../config/firebase');
 const { verifyPassword } = require('../utils/password');
-const { signAccessToken, signRefreshToken, generateTokenPayload } = require('../utils/jwt');
-const env = require('../config/env');
+const logger = require('../config/logger');
 
 const SUPERADMIN_EMAIL = (process.env.SUPERADMIN_EMAIL || 'admin@dispatchcore.com').toLowerCase();
-const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD || null;
-
-function hashForComparison(value) {
-  return crypto.createHash('sha256').update(String(value)).digest();
-}
 
 /**
- * Set JWT tokens as httpOnly Secure cookies
- * @param {Object} req - Express request
- * @param {Object} res - Express response
- * @param {string} accessToken - JWT access token
- * @param {string} refreshToken - JWT refresh token
+ * POST /api/auth/session
+ *
+ * Called after the client authenticates with Firebase.
+ * Looks up the Firebase user in MySQL, sets custom claims, and returns session data.
+ *
+ * The request must include a valid Firebase ID token in the Authorization header
+ * (handled by authMiddleware, which runs before this controller).
  */
-function setTokenCookies(req, res, accessToken, refreshToken) {
-  const isProduction = env.nodeEnv === 'production';
-  const sameSite = isProduction ? 'None' : 'Lax';
-  const secure = isProduction;
-
-  res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure,
-    sameSite,
-    maxAge: 15 * 60 * 1000, // 15 minutes
-    path: '/',
-  });
-
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure,
-    sameSite,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: '/',
-  });
-}
-
-function extractRefreshToken(req) {
-  const cookieToken = req.cookies?.refreshToken;
-  if (cookieToken) {
-    return cookieToken;
-  }
-
-  const bodyToken = typeof req.body?.refreshToken === 'string' ? req.body.refreshToken.trim() : '';
-  if (bodyToken) {
-    return bodyToken;
-  }
-
-  const authHeader = req.headers.authorization || '';
-  if (authHeader.startsWith('Bearer ')) {
-    return authHeader.slice('Bearer '.length).trim();
-  }
-
-  return null;
-}
-
-const login = async (req, res, next) => {
+const createSession = async (req, res, next) => {
   try {
-    const email = String(req.body.email || '').trim().toLowerCase();
-    const password = String(req.body.password || '');
+    const { uid, email, phone } = req.auth;
 
-    if (email === SUPERADMIN_EMAIL) {
-      if (!SUPERADMIN_PASSWORD) {
-        throw new UnauthorizedError('Superadmin login is not configured');
-      }
+    if (!uid) {
+      throw new UnauthorizedError('Firebase UID is required');
+    }
 
-      const inputHash = hashForComparison(password);
-      const expectedHash = hashForComparison(SUPERADMIN_PASSWORD);
-      const isValid = crypto.timingSafeEqual(inputHash, expectedHash);
-      if (!isValid) {
-        throw new UnauthorizedError('Incorrect email or password');
-      }
-
-      const tokenPayload = generateTokenPayload({
-        userId: 'superadmin',
-        userId_type: 'superadmin',
+    // ── Superadmin check ──
+    if (email && email.toLowerCase() === SUPERADMIN_EMAIL) {
+      await auth.setCustomUserClaims(uid, {
         role: 'superadmin',
-        email: SUPERADMIN_EMAIL,
+        companyId: null,
+        driverId: null,
       });
-
-      const accessToken = signAccessToken(tokenPayload);
-      const refreshToken = signRefreshToken(tokenPayload);
-      setTokenCookies(req, res, accessToken, refreshToken);
 
       return success(res, {
         accountType: 'superadmin',
         targetRoute: '/superadmin',
-        tokens: {
-          accessToken,
-          refreshToken,
-        },
         session: {
           name: 'Platform Admin',
           email: SUPERADMIN_EMAIL,
@@ -103,165 +59,246 @@ const login = async (req, res, next) => {
       });
     }
 
-    const company = await Company.findOne({ where: { email } });
-    if (company) {
-      if (!verifyPassword(password, company.password_hash)) {
-        throw new UnauthorizedError('Incorrect email or password');
+    // ── Look up by email (Google / Email-Password auth) ──
+    if (email) {
+      // Check companies first
+      const company = await Company.findOne({ where: { email } });
+      if (company) {
+        // Link Firebase UID if not already linked
+        if (!company.firebase_uid) {
+          await company.update({ firebase_uid: uid });
+        }
+
+        await auth.setCustomUserClaims(uid, {
+          role: 'company',
+          companyId: company.id,
+          driverId: null,
+        });
+
+        return success(res, {
+          accountType: 'company',
+          targetRoute: '/dashboard',
+          session: {
+            companyId: company.id,
+            companyName: company.name,
+            companyLocation: company.location,
+            name: company.name,
+            email: company.email,
+          },
+        });
       }
 
-      const tokenPayload = generateTokenPayload({
-        userId: company.id,
-        userId_type: 'company',
-        role: 'company',
-        companyId: company.id,
-        email: company.email,
+      // Check drivers
+      const driver = await Driver.findOne({ where: { email } });
+      if (driver) {
+        if (!driver.firebase_uid) {
+          await driver.update({ firebase_uid: uid });
+        }
+
+        const isEmployed = driver.type === 'EMPLOYED' && !!driver.company_id;
+        const driverType = isEmployed ? 'employed_driver' : 'independent_driver';
+
+        let companyName = null;
+        if (driver.company_id) {
+          const driverCompany = await Company.findByPk(driver.company_id, {
+            attributes: ['id', 'name', 'location'],
+          });
+          companyName = driverCompany?.name ?? null;
+        }
+
+        await auth.setCustomUserClaims(uid, {
+          role: driverType,
+          companyId: driver.company_id || null,
+          driverId: driver.id,
+        });
+
+        return success(res, {
+          accountType: driverType,
+          targetRoute: isEmployed ? '/employed-driver/dashboard' : '/driver/dashboard',
+          session: {
+            driverId: driver.id,
+            companyId: driver.company_id,
+            companyName,
+            name: driver.name,
+            email: driver.email,
+            phone: driver.phone,
+            driverType: driver.type,
+          },
+        });
+      }
+
+      // No existing account — auto-register based on email domain
+      const firebaseUser = await auth.getUser(uid);
+      const displayName = firebaseUser.displayName || email.split('@')[0];
+      const domain = email.split('@')[1].toLowerCase();
+
+      // Personal/free email providers → independent driver
+      const freeEmailDomains = [
+        'gmail.com', 'googlemail.com',
+        'yahoo.com', 'yahoo.co.in', 'yahoo.in',
+        'outlook.com', 'hotmail.com', 'live.com',
+        'icloud.com', 'me.com', 'mac.com',
+        'aol.com', 'protonmail.com', 'proton.me',
+        'zoho.com', 'yandex.com', 'mail.com',
+        'rediffmail.com',
+      ];
+
+      const isPersonalEmail = freeEmailDomains.includes(domain);
+
+      if (isPersonalEmail) {
+        // Register as independent driver
+        const newDriver = await Driver.create({
+          name: displayName,
+          email,
+          phone: firebaseUser.phoneNumber || null,
+          password: crypto.randomBytes(32).toString('hex'),
+          type: 'INDEPENDENT',
+          company_id: null,
+          status: 'AVAILABLE',
+          firebase_uid: uid,
+        });
+
+        await auth.setCustomUserClaims(uid, {
+          role: 'independent_driver',
+          companyId: null,
+          driverId: newDriver.id,
+        });
+
+        logger.info({ uid, email, driverId: newDriver.id }, 'Auto-registered personal email as independent driver');
+
+        return success(res, {
+          accountType: 'independent_driver',
+          targetRoute: '/driver/dashboard',
+          session: {
+            driverId: newDriver.id,
+            companyId: null,
+            companyName: null,
+            name: newDriver.name,
+            email: newDriver.email,
+            phone: newDriver.phone,
+            driverType: 'INDEPENDENT',
+          },
+        });
+      }
+
+      // Company/custom domain → register as company
+      const companyNameFromDomain = domain.split('.')[0];
+      const newCompany = await Company.create({
+        name: displayName,
+        email,
+        password: crypto.randomBytes(32).toString('hex'),
+        location: '',
+        firebase_uid: uid,
       });
 
-      const accessToken = signAccessToken(tokenPayload);
-      const refreshToken = signRefreshToken(tokenPayload);
-      setTokenCookies(req, res, accessToken, refreshToken);
+      await auth.setCustomUserClaims(uid, {
+        role: 'company',
+        companyId: newCompany.id,
+        driverId: null,
+      });
+
+      logger.info({ uid, email, companyId: newCompany.id, domain }, 'Auto-registered company domain user');
 
       return success(res, {
         accountType: 'company',
         targetRoute: '/dashboard',
-        tokens: {
-          accessToken,
-          refreshToken,
-        },
         session: {
-          companyId: company.id,
-          companyName: company.name,
-          companyLocation: company.location,
-          name: company.name,
-          email: company.email,
+          companyId: newCompany.id,
+          companyName: newCompany.name,
+          companyLocation: newCompany.location,
+          name: newCompany.name,
+          email: newCompany.email,
         },
       });
     }
 
-    const driver = await Driver.findOne({ where: { email } });
-    if (driver) {
-      if (!verifyPassword(password, driver.password_hash)) {
-        throw new UnauthorizedError('Incorrect email or password');
-      }
+    // ── Look up by phone (Phone auth) ──
+    if (phone) {
+      // Normalize: Firebase gives +91XXXXXXXXXX, DB might store differently
+      const normalizedPhone = phone.replace(/\s+/g, '');
 
-      let companyName = null;
-      if (driver.company_id) {
-        const driverCompany = await Company.findByPk(driver.company_id, {
-          attributes: ['id', 'name', 'location'],
-        });
-        companyName = driverCompany?.name ?? null;
-      }
+      // Check drivers first (most common phone login)
+      const driver = await Driver.findOne({ where: { phone: normalizedPhone } });
+      if (driver) {
+        if (!driver.firebase_uid) {
+          await driver.update({ firebase_uid: uid });
+        }
 
-      const isEmployed = driver.type === 'EMPLOYED' && !!driver.company_id;
-      const driverType = isEmployed ? 'employed_driver' : 'independent_driver';
+        const isEmployed = driver.type === 'EMPLOYED' && !!driver.company_id;
+        const driverType = isEmployed ? 'employed_driver' : 'independent_driver';
 
-      const tokenPayload = generateTokenPayload({
-        userId: driver.id,
-        userId_type: 'driver',
-        role: driverType,
-        companyId: driver.company_id,
-        driverId: driver.id,
-        email: driver.email,
-      });
+        let companyName = null;
+        if (driver.company_id) {
+          const driverCompany = await Company.findByPk(driver.company_id, {
+            attributes: ['id', 'name', 'location'],
+          });
+          companyName = driverCompany?.name ?? null;
+        }
 
-      const accessToken = signAccessToken(tokenPayload);
-      const refreshToken = signRefreshToken(tokenPayload);
-      setTokenCookies(req, res, accessToken, refreshToken);
-
-      return success(res, {
-        accountType: driverType,
-        targetRoute: isEmployed ? '/employed-driver/dashboard' : '/driver/dashboard',
-        tokens: {
-          accessToken,
-          refreshToken,
-        },
-        session: {
+        await auth.setCustomUserClaims(uid, {
+          role: driverType,
+          companyId: driver.company_id || null,
           driverId: driver.id,
-          companyId: driver.company_id,
-          companyName,
-          name: driver.name,
-          email: driver.email,
-          phone: driver.phone,
-          driverType: driver.type,
-        },
-      });
+        });
+
+        return success(res, {
+          accountType: driverType,
+          targetRoute: isEmployed ? '/employed-driver/dashboard' : '/driver/dashboard',
+          session: {
+            driverId: driver.id,
+            companyId: driver.company_id,
+            companyName,
+            name: driver.name,
+            email: driver.email,
+            phone: driver.phone,
+            driverType: driver.type,
+          },
+        });
+      }
+
+      // Check companies
+      const company = await Company.findOne({ where: { phone: normalizedPhone } });
+      if (company) {
+        if (!company.firebase_uid) {
+          await company.update({ firebase_uid: uid });
+        }
+
+        await auth.setCustomUserClaims(uid, {
+          role: 'company',
+          companyId: company.id,
+          driverId: null,
+        });
+
+        return success(res, {
+          accountType: 'company',
+          targetRoute: '/dashboard',
+          session: {
+            companyId: company.id,
+            companyName: company.name,
+            companyLocation: company.location,
+            name: company.name,
+            email: company.email,
+          },
+        });
+      }
+
+      throw new NotFoundError('No account found for this phone number');
     }
 
-    throw new UnauthorizedError('Email is not registered');
+    throw new UnauthorizedError('Firebase user has neither email nor phone');
   } catch (error) {
     next(error);
   }
 };
 
 /**
- * Refresh access token using refresh token
- * Frontend calls this when access token expires (401 response)
- */
-const refresh = async (req, res, next) => {
-  try {
-    const refreshToken = extractRefreshToken(req);
-
-    if (!refreshToken) {
-      throw new UnauthorizedError('Refresh token not found');
-    }
-
-    const { verifyRefreshToken } = require('../utils/jwt');
-    const decoded = verifyRefreshToken(refreshToken);
-
-    const tokenPayload = generateTokenPayload({
-      userId: decoded.userId,
-      userId_type: decoded.userId_type,
-      role: decoded.role,
-      companyId: decoded.companyId,
-      driverId: decoded.driverId,
-      email: decoded.email,
-    });
-
-    if (tokenPayload.userId == null || !tokenPayload.role || !tokenPayload.email) {
-      throw new UnauthorizedError('Refresh token payload is invalid');
-    }
-
-    // Generate new access token with same payload
-    const newAccessToken = signAccessToken(tokenPayload);
-    
-    // Optionally rotate refresh token too (for extra security)
-    const newRefreshToken = signRefreshToken(tokenPayload);
-    setTokenCookies(req, res, newAccessToken, newRefreshToken);
-
-    return success(res, {
-      message: 'Token refreshed successfully',
-      tokens: {
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Logout — clear JWT cookies
+ * POST /api/auth/logout
+ *
+ * Client-side logout is handled by firebase.auth().signOut().
+ * This endpoint simply acknowledges and can be used for server-side cleanup.
  */
 const logout = async (req, res, next) => {
   try {
-    const isProduction = env.nodeEnv === 'production';
-    const sameSite = isProduction ? 'None' : 'Lax';
-    const secure = isProduction;
-
-    res.clearCookie('accessToken', {
-      path: '/',
-      httpOnly: true,
-      secure,
-      sameSite,
-    });
-    res.clearCookie('refreshToken', {
-      path: '/',
-      httpOnly: true,
-      secure,
-      sameSite,
-    });
-
     return success(res, {
       message: 'Logged out successfully',
     });
@@ -270,4 +307,4 @@ const logout = async (req, res, next) => {
   }
 };
 
-module.exports = { login, refresh, logout };
+module.exports = { createSession, logout };

@@ -16,7 +16,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import MapView from "@/components/map/MapView";
 import type { MapMarker } from "@/components/map/MapView";
-import { useOrderTracking, useOrderMessages } from "@/hooks/realtime/useSocket";
+import { useOrderTracking, useOrderMessages } from "@/hooks/realtime/useRealtime";
 import { API_BASE, ApiRequestError } from "@/lib/api";
 import {
   fetchMessages,
@@ -484,7 +484,7 @@ export default function CustomerTrackingPage() {
     onStatusChange: (update) =>
       setData((prev) =>
         prev
-          ? { ...prev, order: { ...prev.order, status: update.status } }
+          ? { ...prev, order: { ...prev.order, status: update.status as string } }
           : prev,
       ),
   });

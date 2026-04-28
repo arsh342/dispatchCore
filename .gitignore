@@ -10,3 +10,6 @@ docs/plans
 cert/
 
 .github/copilot-instructions.md
+
+# Firebase
+firebase-service-account.json

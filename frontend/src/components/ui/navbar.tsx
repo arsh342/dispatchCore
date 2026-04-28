@@ -3,27 +3,6 @@ import { motion, AnimatePresence } from "motion/react";
 import { Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
-/* Generate a fine glass grain — very small particles, near-invisible */
-const navNoiseUrl = (() => {
-  if (typeof document === "undefined") return "";
-  const size = 48;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return "";
-  const imageData = ctx.createImageData(size, size);
-  for (let i = 0; i < imageData.data.length; i += 4) {
-    const v = Math.floor(Math.random() * 255);
-    imageData.data[i] = v;
-    imageData.data[i + 1] = v;
-    imageData.data[i + 2] = v;
-    imageData.data[i + 3] = 8; // barely-there grain
-  }
-  ctx.putImageData(imageData, 0, 0);
-  return canvas.toDataURL("image/png");
-})();
-
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -48,51 +27,17 @@ export function Navbar() {
       style={{ padding: scrolled ? "12px 16px" : "0px" }}
     >
       <motion.div
-        className="relative flex items-center justify-between px-3 transition-all duration-500 ease-out overflow-hidden"
+        className="relative flex items-center justify-between px-3 transition-all duration-500 ease-out"
         style={{
           maxWidth: scrolled ? "800px" : "100%",
           width: "100%",
           paddingTop: scrolled ? "12px" : "16px",
           paddingBottom: scrolled ? "12px" : "16px",
           borderRadius: scrolled ? "50px" : "0px",
-          backgroundColor: scrolled
-            ? "hsla(var(--transparent) / 0.35)"
-            : "transparent",
-          backdropFilter: scrolled ? "blur(5px) saturate(100%)" : "none",
-          WebkitBackdropFilter: scrolled ? "blur(5px) saturate(100%)" : "none",
-          boxShadow: scrolled
-            ? "0 18px 48px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.06)"
-            : "none",
-          borderWidth: scrolled ? ".5px" : "0px",
-          borderStyle: "solid",
-          borderColor: scrolled
-            ? "hsla(transparent / 0.08)"
-            : "transparent",
+          backgroundColor: scrolled ? "var(--sidebar)" : "transparent",
+          boxShadow: scrolled ? "0 10px 30px rgba(0, 0, 0, 0.14)" : "none",
         }}
       >
-        {/* Glass effect layers */}
-        {scrolled && (
-          <>
-            {/* Fine grain texture */}
-            <div
-              className="absolute inset-0 pointer-events-none rounded-[50px]"
-              style={{
-                backgroundImage: `url(${navNoiseUrl})`,
-                backgroundRepeat: "repeat",
-                opacity: 0.4,
-                mixBlendMode: "soft-light",
-              }}
-            />
-            {/* Top-edge refraction highlight */}
-            <div
-              className="absolute inset-x-0 top-0 h-[1px] pointer-events-none rounded-[50px]"
-              style={{
-                background: "linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.12) 70%, transparent 90%)",
-              }}
-            />
-          </>
-        )}
-
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 relative z-10">
           <span className="text-lg font-bold text-foreground hidden sm:inline">
@@ -159,7 +104,7 @@ export function Navbar() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed inset-0 bg-background z-50 pt-24 px-6 md:hidden"
+            className="fixed inset-0 bg-sidebar z-50 pt-24 px-6 md:hidden"
             initial={{ opacity: 0, x: "100%" }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: "100%" }}
