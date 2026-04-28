@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef, Suspense, lazy } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAutoTheme } from "@/hooks/app/useAutoTheme";
 import { useAuth } from "@/hooks/auth/useAuth";
-import type { ConfirmationResult } from "firebase/auth";
 
 import {
   AtSignIcon,
@@ -10,7 +9,6 @@ import {
   EyeIcon,
   EyeOffIcon,
   Loader2Icon,
-  PhoneIcon,
 } from "lucide-react";
 
 const Dithering = lazy(() =>
@@ -19,15 +17,13 @@ const Dithering = lazy(() =>
   })),
 );
 
-type LoginMethod = "email" | "phone";
-
 export function AuthPage() {
   const REMEMBER_ME_KEY = "dc_remember_me";
   const REMEMBERED_EMAIL_KEY = "dc_remembered_email";
 
   useAutoTheme();
   const navigate = useNavigate();
-  const { signInEmail, signInGoogle, startPhoneSignIn, verifyPhoneOtp } = useAuth();
+  const { signInEmail, signInGoogle } = useAuth();
 
   const [isHovered, setIsHovered] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -35,21 +31,9 @@ export function AuthPage() {
     document.documentElement.classList.contains("dark"),
   );
 
-  // Login method
-  const [loginMethod, setLoginMethod] = useState<LoginMethod>("email");
-
-  // Email form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-
-  // Phone form state
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [otp, setOtp] = useState("");
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
-  const recaptchaRef = useRef<HTMLDivElement>(null);
-
-  // UI state
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -68,12 +52,9 @@ export function AuthPage() {
     const remembered = localStorage.getItem(REMEMBER_ME_KEY) === "true";
     const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY) || "";
     setRememberMe(remembered);
-    if (remembered && rememberedEmail) {
-      setEmail(rememberedEmail);
-    }
+    if (remembered && rememberedEmail) setEmail(rememberedEmail);
   }, []);
 
-  // ── Email Sign-In ──
   const handleEmailLogin = async () => {
     setError("");
     if (!email || !password) {
@@ -92,15 +73,12 @@ export function AuthPage() {
       const session = await signInEmail(email, password);
       navigate(session.targetRoute);
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Incorrect email or password.",
-      );
+      setError(err instanceof Error ? err.message : "Incorrect email or password.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Google Sign-In ──
   const handleGoogleLogin = async () => {
     setError("");
     setLoading(true);
@@ -108,50 +86,7 @@ export function AuthPage() {
       const session = await signInGoogle();
       navigate(session.targetRoute);
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Google sign-in failed.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ── Phone Sign-In ──
-  const handleSendOtp = async () => {
-    setError("");
-    if (!phoneNumber) {
-      setError("Please enter your phone number.");
-      return;
-    }
-    if (!recaptchaRef.current) return;
-
-    setLoading(true);
-    try {
-      const result = await startPhoneSignIn(phoneNumber, recaptchaRef.current);
-      setConfirmationResult(result);
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Failed to send OTP.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    setError("");
-    if (!otp || !confirmationResult) {
-      setError("Please enter the OTP.");
-      return;
-    }
-    setLoading(true);
-    try {
-      const session = await verifyPhoneOtp(confirmationResult, otp);
-      navigate(session.targetRoute);
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Invalid OTP.",
-      );
+      setError(err instanceof Error ? err.message : "Google sign-in failed.");
     } finally {
       setLoading(false);
     }
@@ -159,13 +94,7 @@ export function AuthPage() {
 
   const handleLoginSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (loginMethod === "email") {
-      void handleEmailLogin();
-    } else if (confirmationResult) {
-      void handleVerifyOtp();
-    } else {
-      void handleSendOtp();
-    }
+    void handleEmailLogin();
   };
 
   const handleRememberMeChange = (checked: boolean) => {
@@ -261,130 +190,61 @@ export function AuthPage() {
               <div className="flex-1 h-px bg-border" />
             </div>
 
-            {/* ── Email / Phone Toggle ── */}
-            <div className="relative grid grid-cols-2 rounded-full border border-border bg-card p-1">
-              <div
-                className="absolute inset-y-1 w-[calc(50%-4px)] rounded-full border border-primary bg-primary/10 shadow-sm transition-transform duration-300 ease-in-out"
-                style={{
-                  transform: loginMethod === "email" ? "translateX(4px)" : "translateX(calc(100% + 4px))",
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => { setLoginMethod("email"); setError(""); }}
-                className="relative z-[1] flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors duration-300"
-              >
-                <AtSignIcon className={`size-4 transition-colors duration-300 ${loginMethod === "email" ? "text-primary" : "text-muted-foreground"}`} />
-                Email
-              </button>
-              <button
-                type="button"
-                onClick={() => { setLoginMethod("phone"); setError(""); setConfirmationResult(null); setOtp(""); }}
-                className="relative z-[1] flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors duration-300"
-              >
-                <PhoneIcon className={`size-4 transition-colors duration-300 ${loginMethod === "phone" ? "text-primary" : "text-muted-foreground"}`} />
-                Phone
-              </button>
-            </div>
-
-            {/* ── Form ── */}
+            {/* ── Email Form ── */}
             <form className="space-y-4" onSubmit={handleLoginSubmit}>
-              {loginMethod === "email" ? (
-                <>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Email</label>
-                    <div className="relative">
-                      <input
-                        placeholder="you@example.com"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full rounded-full border border-border bg-card px-6 py-[18px] ps-11 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
-                      />
-                      <div className="text-muted-foreground pointer-events-none absolute inset-y-0 start-0 flex items-center ps-4">
-                        <AtSignIcon className="size-4" aria-hidden="true" />
-                      </div>
-                    </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Email</label>
+                <div className="relative">
+                  <input
+                    placeholder="you@example.com"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-full border border-border bg-card px-6 py-[18px] ps-11 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+                  />
+                  <div className="text-muted-foreground pointer-events-none absolute inset-y-0 start-0 flex items-center ps-4">
+                    <AtSignIcon className="size-4" aria-hidden="true" />
                   </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Password</label>
-                    <div className="relative">
-                      <input
-                        placeholder="••••••••"
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full rounded-full border border-border bg-card px-6 py-[18px] ps-11 pe-11 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
-                      />
-                      <div className="text-muted-foreground pointer-events-none absolute inset-y-0 start-0 flex items-center ps-4">
-                        <LockIcon className="size-4" aria-hidden="true" />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 end-0 flex items-center pe-4 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={(e) => handleRememberMeChange(e.target.checked)}
-                        className="size-4 rounded border-input accent-primary bg-white dark:bg-card border appearance-none checked:appearance-auto"
-                      />
-                      <span className="text-muted-foreground">Remember me</span>
-                    </label>
-                    <a href="#" className="text-sm text-primary hover:underline underline-offset-4 font-medium">
-                      Forgot password?
-                    </a>
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">
-                    {confirmationResult ? "Verification Code" : "Phone Number"}
-                  </label>
-                  <div className="relative">
-                    {confirmationResult ? (
-                      <input
-                        placeholder="123456"
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={6}
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                        className="w-full rounded-full border border-border bg-card px-6 py-[18px] ps-11 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors tracking-[0.3em] text-center font-mono"
-                      />
-                    ) : (
-                      <input
-                        placeholder="+91 98765 43210"
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="w-full rounded-full border border-border bg-card px-6 py-[18px] ps-11 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
-                      />
-                    )}
-                    <div className="text-muted-foreground pointer-events-none absolute inset-y-0 start-0 flex items-center ps-4">
-                      <PhoneIcon className="size-4" aria-hidden="true" />
-                    </div>
-                  </div>
-                  {confirmationResult && (
-                    <button
-                      type="button"
-                      onClick={() => { setConfirmationResult(null); setOtp(""); }}
-                      className="text-xs text-primary hover:underline underline-offset-4"
-                    >
-                      ← Change phone number
-                    </button>
-                  )}
                 </div>
-              )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Password</label>
+                <div className="relative">
+                  <input
+                    placeholder="••••••••"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-full border border-border bg-card px-6 py-[18px] ps-11 pe-11 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+                  />
+                  <div className="text-muted-foreground pointer-events-none absolute inset-y-0 start-0 flex items-center ps-4">
+                    <LockIcon className="size-4" aria-hidden="true" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 end-0 flex items-center pe-4 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => handleRememberMeChange(e.target.checked)}
+                    className="size-4 rounded border-input accent-primary bg-white dark:bg-card border appearance-none checked:appearance-auto"
+                  />
+                  <span className="text-muted-foreground">Remember me</span>
+                </label>
+                <a href="#" className="text-sm text-primary hover:underline underline-offset-4 font-medium">
+                  Forgot password?
+                </a>
+              </div>
 
               {error && (
                 <div className="rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
@@ -399,12 +259,8 @@ export function AuthPage() {
               >
                 {loading ? (
                   <><Loader2Icon className="size-4 animate-spin" /> Signing in...</>
-                ) : loginMethod === "email" ? (
-                  "Sign In"
-                ) : confirmationResult ? (
-                  "Verify OTP"
                 ) : (
-                  "Send OTP"
+                  "Sign In"
                 )}
               </button>
             </form>
@@ -416,9 +272,6 @@ export function AuthPage() {
               </Link>
             </p>
           </div>
-
-          {/* Recaptcha container (invisible) */}
-          <div ref={recaptchaRef} id="recaptcha-container" />
 
           <p className="relative z-10 mt-8 text-center text-xs text-muted-foreground/60">
             © 2026 dispatchCore. All rights reserved.

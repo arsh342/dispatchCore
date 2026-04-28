@@ -15,11 +15,8 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signInWithPopup,
-  signInWithPhoneNumber,
   GoogleAuthProvider,
-  RecaptchaVerifier,
   type User,
-  type ConfirmationResult,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import {
@@ -47,7 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<AuthSessionResponse | null>(null);
 
-  // Listen for Firebase auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
@@ -83,30 +79,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return createBackendSession();
   }, []);
 
-  const startPhoneSignIn = useCallback(
-    async (
-      phoneNumber: string,
-      recaptchaContainer: HTMLElement,
-    ): Promise<ConfirmationResult> => {
-      const recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainer, {
-        size: "invisible",
-      });
-      return signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
-    },
-    [],
-  );
-
-  const verifyPhoneOtp = useCallback(
-    async (
-      confirmationResult: ConfirmationResult,
-      otp: string,
-    ): Promise<AuthSessionResponse> => {
-      await confirmationResult.confirm(otp);
-      return createBackendSession();
-    },
-    [],
-  );
-
   const handleSignOut = useCallback(async () => {
     await auth.signOut();
     clearSessionStorage();
@@ -121,8 +93,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         signInEmail,
         signInGoogle,
-        startPhoneSignIn,
-        verifyPhoneOtp,
         signOut: handleSignOut,
       }}
     >

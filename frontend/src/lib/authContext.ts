@@ -7,7 +7,6 @@
 
 import { createContext } from "react";
 import type { User } from "firebase/auth";
-import type { ConfirmationResult } from "firebase/auth";
 import type { AuthSessionResponse } from "@/lib/session";
 
 export interface AuthContextValue {
@@ -21,16 +20,6 @@ export interface AuthContextValue {
   signInEmail: (email: string, password: string) => Promise<AuthSessionResponse>;
   /** Sign in with Google popup */
   signInGoogle: () => Promise<AuthSessionResponse>;
-  /** Start phone sign-in — returns a ConfirmationResult to verify OTP */
-  startPhoneSignIn: (
-    phoneNumber: string,
-    recaptchaContainer: HTMLElement,
-  ) => Promise<ConfirmationResult>;
-  /** Verify phone OTP and complete sign-in */
-  verifyPhoneOtp: (
-    confirmationResult: ConfirmationResult,
-    otp: string,
-  ) => Promise<AuthSessionResponse>;
   /** Sign out */
   signOut: () => Promise<void>;
 }
