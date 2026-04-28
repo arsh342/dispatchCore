@@ -7,6 +7,7 @@
  */
 
 import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 export interface AuthSessionResponse {
   accountType:
@@ -39,8 +40,25 @@ const SESSION_KEYS = [
 ] as const;
 
 /**
+ * Waits for Firebase Auth to restore the session on page reload.
+ * Resolves immediately on subsequent calls after first init.
+ */
+let authReady: Promise<void> | null = null;
+function waitForAuth(): Promise<void> {
+  if (!authReady) {
+    authReady = new Promise<void>((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, () => {
+        unsubscribe();
+        resolve();
+      });
+    });
+  }
+  return authReady;
+}
+
+/**
  * Build identity headers for API requests.
- * Uses the Firebase ID token (auto-refreshed by the SDK).
+ * Waits for Firebase to restore the session before reading the token.
  */
 export async function getIdentityHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = {};
@@ -51,7 +69,9 @@ export async function getIdentityHeaders(): Promise<Record<string, string>> {
   if (companyId) headers["x-company-id"] = companyId;
   if (driverId) headers["x-driver-id"] = driverId;
 
-  // Get Firebase ID token (auto-refreshes if expired)
+  // Wait for Firebase to restore auth session on reload
+  await waitForAuth();
+
   const currentUser = auth.currentUser;
   if (currentUser) {
     try {
